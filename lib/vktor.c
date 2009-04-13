@@ -36,10 +36,12 @@
 #define VKTOR_ERR_STRLEN 1024
 
 /**
- * vktor_parser_init:
+ * @brief Initialize a new parser 
  * 
  * Initialize and return a new parser struct. Will return NULL if memory can't 
  * be allocated.
+ * 
+ * @return a newly allocated parser
  */
 vktor_parser*
 vktor_parser_init()
@@ -60,11 +62,13 @@ vktor_parser_init()
 }
 
 /**
- * vktor_buffer_free: 
- * @buffer Buffer to free
+ * @brief Free a vktor_buffer struct
  * 
  * Free a vktor_buffer struct without following any next buffers in the chain. 
  * Call vktor_buffer_free_all() to free an entire chain of buffers.
+ * 
+ * @param[in,out] buffer the buffer to free
+ * @relates vktor_buffer_free_all 
  */
 static void 
 vktor_buffer_free(vktor_buffer *buffer)
@@ -77,10 +81,13 @@ vktor_buffer_free(vktor_buffer *buffer)
 }
 
 /**
- * vktor_buffer_fre_all:
- * @buffer First buffer in the list to free
+ * @brief Free an entire linked list of vktor buffers
  * 
- * Free an entire linked list of vktor buffers
+ * Free an entire linked list of vktor buffers. Will usually be called by 
+ * vktor_parser_free() to free all buffers attached to a parser. 
+ * 
+ * @param[in,out] buffer the first buffer in the list to free
+ * @relates vktor_buffer_free
  */
 static void 
 vktor_buffer_free_all(vktor_buffer *buffer)
@@ -95,10 +102,12 @@ vktor_buffer_free_all(vktor_buffer *buffer)
 }
 
 /**
- * vktor_parser_free:
- * @parser Parser struct to free 
+ * @brief Free a parser and any associated memory
  * 
- * Free parser and any associated memory
+ * Free a parser and any associated memory structures, including any linked
+ * buffers
+ * 
+ * @param [in,out] parser parser struct to free
  */
 void
 vktor_parser_free(vktor_parser *parser)
@@ -116,6 +125,21 @@ vktor_parser_free(vktor_parser *parser)
 	free(parser);
 }
 
+/**
+ * @brief Initialize and populate new error struct
+ *
+ * If eptr is NULL, will do nothing. Otherwise, will initialize a new error
+ * struct with an error message and code, and set eptr to point to it. 
+ * 
+ * The error message is passed as an sprintf-style format and an arbitrary set
+ * of parameters, just like sprintf() would be used. 
+ * 
+ * Used internally to pass error messages back to the user. 
+ * 
+ * @param [in,out] eptr error struct pointer-pointer to populate or NULL
+ * @param [in]     code error code
+ * @param [in]     msg  error message (sprintf-style format)
+ */
 static void 
 vktor_error_set(vktor_error **eptr, unsigned short code, const char *msg, ...)
 {
@@ -142,6 +166,13 @@ vktor_error_set(vktor_error **eptr, unsigned short code, const char *msg, ...)
 	*eptr = err;
 }
 
+/**
+ * @brief Free an error struct
+ * 
+ * Free an error struct
+ * 
+ * @param [in,out] err Error struct to free
+ */
 void 
 vktor_error_free(vktor_error *err)
 {
@@ -152,6 +183,17 @@ vktor_error_free(vktor_error *err)
 	free(err);
 }
 
+/**
+ * @brief Initialize a vktor buffer struct
+ * 
+ * Initialize a vktor buffer struct and set it's associated text and other 
+ * properties
+ * 
+ * @param [in] text buffer contents
+ * @param [in] text_len the length of the buffer
+ * 
+ * @return A newly-allocated buffer struct
+ */
 static vktor_buffer*
 vktor_buffer_init(char *text, long text_len)
 {
@@ -169,6 +211,22 @@ vktor_buffer_init(char *text, long text_len)
 	return buffer;
 }
 
+/**
+ * @brief Read and store JSON text in the internal buffer
+ * 
+ * Read and store JSON text in the internal buffer, to be used later when 
+ * parsing. This function should be called before starting to parse at least
+ * once (to feed the parser), and again whenever new data is available and the
+ * VKTOR_MORE_DATA status is returned from vktor_parse().
+ * 
+ * @param [in] parser   parser object
+ * @param [in] text     text to add to buffer
+ * @param [in] text_len length of text to add to buffer
+ * @param [in,out] err  pointer to an unallocated error struct to return any 
+ *                      errors, or NULL if there is no need for error handling
+ * 
+ * @return vktor status code (OK on success, ERROR otherwise)
+ */
 vktor_status 
 vktor_read_buffer(vktor_parser *parser, char *text, long text_len, 
                   vktor_error **err) 
