@@ -788,6 +788,8 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIB@&t@OBJS
+ENABLE_DEBUG_FALSE
+ENABLE_DEBUG_TRUE
 CPP
 OTOOL64
 OTOOL
@@ -902,6 +904,7 @@ with_pic
 enable_fast_install
 with_gnu_ld
 enable_libtool_lock
+enable_debug
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1549,6 +1552,7 @@ Optional Features:
   --enable-fast-install@<:@=PKGS@:>@ 
                           optimize for fast installation @<:@default=yes@:>@
   --disable-libtool-lock  avoid locking (might break parallel builds)
+  --enable-debug          Enable various debugging build options @<:@default=no@:>@
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -11294,7 +11298,8 @@ _ACEOF
 fi
 
 
-for ac_header in string.h
+
+for ac_header in string.h stdarg.h
 do
 as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 if { as_var=$as_ac_Header; eval "test \"\${$as_var+set}\" = set"; }; then
@@ -11657,6 +11662,44 @@ fi
 done
 
 
+# Debug build convenience option
+@%:@ Check whether --enable-debug was given.
+if test "${enable_debug+set}" = set; then
+  enableval=$enable_debug; 
+    if test "x$enableval" = "xno"; then
+      enable_debug="no"
+	else
+	  enable_debug="yes"
+	fi
+  
+else
+  
+  	enable_debug="no"
+  
+fi
+  
+ if test "x$enable_debug" = "xyes"; then
+  ENABLE_DEBUG_TRUE=
+  ENABLE_DEBUG_FALSE='#'
+else
+  ENABLE_DEBUG_TRUE='#'
+  ENABLE_DEBUG_FALSE=
+fi
+  
+if test "x$enable_debug" = "xyes"; then
+  
+cat >>confdefs.h <<_ACEOF
+@%:@define ENABLE_DEBUG 1
+_ACEOF
+
+else 
+  
+cat >>confdefs.h <<_ACEOF
+@%:@define NODEBUG 1
+_ACEOF
+
+fi
+
 ac_config_files="$ac_config_files Makefile lib/Makefile test/Makefile"
 
 
@@ -11771,6 +11814,13 @@ if test -z "${am__fastdepCC_TRUE}" && test -z "${am__fastdepCC_FALSE}"; then
   { { $as_echo "$as_me:$LINENO: error: conditional \"am__fastdepCC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 $as_echo "$as_me: error: conditional \"am__fastdepCC\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${ENABLE_DEBUG_TRUE}" && test -z "${ENABLE_DEBUG_FALSE}"; then
+  { { $as_echo "$as_me:$LINENO: error: conditional \"ENABLE_DEBUG\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+$as_echo "$as_me: error: conditional \"ENABLE_DEBUG\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
