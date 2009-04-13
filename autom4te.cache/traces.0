@@ -2235,8 +2235,8 @@ m4trace:configure.ac:15: -1- m4_pattern_allow([^CPP$])
 m4trace:configure.ac:15: -1- m4_pattern_allow([^STDC_HEADERS$])
 m4trace:configure.ac:18: -1- m4_pattern_allow([^STDC_HEADERS$])
 m4trace:configure.ac:22: -1- m4_pattern_allow([^const$])
-m4trace:configure.ac:32: -1- m4_pattern_allow([^LIB@&t@OBJS$])
-m4trace:configure.ac:32: -1- m4_pattern_allow([^LTLIBOBJS$])
-m4trace:configure.ac:32: -1- _AC_AM_CONFIG_HEADER_HOOK(["$ac_file"])
-m4trace:configure.ac:32: -1- _AM_OUTPUT_DEPENDENCY_COMMANDS
-m4trace:configure.ac:32: -1- _LT_PROG_LTMAIN
+m4trace:configure.ac:33: -1- m4_pattern_allow([^LIB@&t@OBJS$])
+m4trace:configure.ac:33: -1- m4_pattern_allow([^LTLIBOBJS$])
+m4trace:configure.ac:33: -1- _AC_AM_CONFIG_HEADER_HOOK(["$ac_file"])
+m4trace:configure.ac:33: -1- _AM_OUTPUT_DEPENDENCY_COMMANDS
+m4trace:configure.ac:33: -1- _LT_PROG_LTMAIN

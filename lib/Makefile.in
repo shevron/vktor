@@ -60,9 +60,6 @@ LTLIBRARIES = $(lib_LTLIBRARIES)
 libvktor_la_LIBADD =
 am_libvktor_la_OBJECTS = vktor.lo
 libvktor_la_OBJECTS = $(am_libvktor_la_OBJECTS)
-libvktor_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(libvktor_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__depfiles_maybe = depfiles
@@ -193,11 +190,13 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 vktordir = $(includedir)/vktor
-VKTOR_LDFLAGS = -module
+
+#VKTOR_LDFLAGS = -module
 vktor_HEADERS = vktor.h
 lib_LTLIBRARIES = libvktor.la
 libvktor_la_SOURCES = vktor.c
-libvktor_la_LDFLAGS = $(VKTOR_LDFLAGS)
+
+#libvktor_la_LDFLAGS = $(VKTOR_LDFLAGS)
 AM_CFLAGS = $(DEPOS_CFLAGS)
 all: all-am
 
@@ -260,7 +259,7 @@ clean-libLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 libvktor.la: $(libvktor_la_OBJECTS) $(libvktor_la_DEPENDENCIES) 
-	$(libvktor_la_LINK) -rpath $(libdir) $(libvktor_la_OBJECTS) $(libvktor_la_LIBADD) $(LIBS)
+	$(LINK) -rpath $(libdir) $(libvktor_la_OBJECTS) $(libvktor_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

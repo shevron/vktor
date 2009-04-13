@@ -25,7 +25,8 @@ AC_C_CONST
 AC_CHECK_FUNCS([strerror])
 
 AC_CONFIG_FILES([Makefile 
-                 lib/Makefile])
+                 lib/Makefile
+				 test/Makefile])
 
 AC_CONFIG_COMMANDS([default],[[ echo timestamp > stamp-h ]],[[]])
 
