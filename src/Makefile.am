@@ -1,12 +1,15 @@
 # Makefile.am for vktor library
 
-VKTOR_LDFLAGS = -module -avoid-version
+vktordir = $(includedir)/vktor
 
-pkglib_LTLIBRARIES = vktor.la
+VKTOR_LDFLAGS = -module
 
-vktor_la_SOURCES = vktor.c \
-                   vktor.h
+vktor_HEADERS = vktor.h
 
-vktor_la_LDFLAGS = $(VKTOR_LDFLAGS)
+lib_LTLIBRARIES = libvktor.la
+
+libvktor_la_SOURCES = vktor.c
+
+libvktor_la_LDFLAGS = $(VKTOR_LDFLAGS)
 
 AM_CFLAGS = $(DEPOS_CFLAGS)
