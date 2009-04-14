@@ -1,4 +1,4 @@
-/**
+/* 
  * vktor JSON pull-parser library
  * 
  * Copyright (c) 2009 Shahar Evron
@@ -33,8 +33,8 @@
 #include "config.h"
 #include "vktor.h"
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include <assert.h>
 
@@ -42,6 +42,11 @@
  * Maximal error string length (mostly for internal use)
  */
 #define VKTOR_ERR_STRLEN 1024
+
+/**
+ * Convenience macro to check if we are at the end of a buffer
+ */
+#define eobuffer(b) (b->ptr >= b->size)
 
 /**
  * @brief Initialize a new parser 
@@ -147,7 +152,7 @@ vktor_parser_free(vktor_parser *parser)
  * @param [in]     msg  error message (sprintf-style format)
  */
 static void 
-vktor_error_set(vktor_error **eptr, unsigned short code, const char *msg, ...)
+vktor_error_set(vktor_error **eptr, vktor_errcode code, const char *msg, ...)
 {
 	vktor_error *err;
 	
@@ -241,8 +246,8 @@ vktor_read_buffer(vktor_parser *parser, char *text, long text_len,
 	
 	// Create buffer
 	if ((buffer = vktor_buffer_init(text, text_len)) == NULL) {
-		vktor_error_set(err, 1, "Unable to allocate memory buffer for %ld bytes", 
-			text_len);
+		vktor_error_set(err, VKTOR_ERR_OUT_OF_MEMORY, 
+			"Unable to allocate memory buffer for %ld bytes", text_len);
 		return VKTOR_ERROR;
 	}
 	
@@ -257,4 +262,123 @@ vktor_read_buffer(vktor_parser *parser, char *text, long text_len,
 	}
 	
 	return VKTOR_OK;
+}
+
+/**
+ * @brief Advance the parser to the next buffer
+ * 
+ * Advance the parser to the next buffer in the parser's buffer list. Called 
+ * when the end of the current buffer is reached, and more data is required. 
+ * 
+ * If no further buffers are available, will set vktor_parser->buffer and 
+ * vktor_parser->last_buffer to NULL.
+ * 
+ * @param [in,out] parser The parser we are working with
+ */
+static void 
+vktor_parser_advance_buffer(vktor_parser *parser)
+{
+	vktor_buffer *next;
+	
+	assert(parser->buffer != NULL);
+	assert(eobuffer(parser->buffer));
+	
+	next = parser->buffer->next_buff;
+	vktor_buffer_free(parser->buffer);
+	parser->buffer = next;
+	
+	if (parser->buffer == NULL) {
+		parser->last_buffer = NULL;
+	}
+}
+
+/**
+ * @brief Parse some JSON text and return on the next token
+ * 
+ * Parse the text buffer until the next JSON token is encountered
+ * 
+ * In case of error, if error is not NULL, it will be populated with error 
+ * information, and VKTOR_ERROR will be returned
+ * 
+ * @param [in,out] parser The parser object to work with
+ * @param [out]    error  A vktor_error pointer pointer, or NULL
+ * 
+ * @return Status code:
+ *  - VKTOR_OK        if a token was encountered
+ *  - VKTOR_ERROR     if an error has occured
+ *  - VKTOR_MORE_DATA if we need more data in order to continue parsing
+ *  - VKTOR_COMPLETE  if parsing is complete and no further data is expected
+ */
+vktor_status 
+vktor_parse(vktor_parser *parser, vktor_error **error)
+{
+	char c;
+	int  done;
+	
+	assert(parser != NULL);
+	
+	// Do we have a buffer to work with?
+	while (parser->buffer != NULL) {
+		done = 0;
+		
+		while (! eobuffer(parser->buffer)) {
+			c = parser->buffer->text[parser->buffer->ptr];
+		
+			switch (c) {
+				case '{':
+					done = 1;
+					printf("{");
+					break;
+					
+				case '(':
+					done = 1;
+					printf("(");
+					break;
+					
+				case '"':
+					done = 1;
+					printf("\"");
+					break;
+				
+				case ',':
+					done = 1;
+					printf(",");
+					break;
+					
+				case '}':
+					done = 1;
+					printf("}");
+					break;
+					
+				case ')':
+					done = 1;
+					printf(")");
+					break;
+					
+				case ' ':
+				case '\n':
+				case '\r':
+				case '\t':
+					printf(" ");
+					break;
+					
+				default:
+					printf(".");
+					// Check for digits
+					break;
+			}
+			
+			parser->buffer->ptr++;
+			if (done) break;
+		}
+		
+		if (done) break;
+		vktor_parser_advance_buffer(parser);	
+	}
+	
+	if (parser->buffer == NULL) {
+		return VKTOR_MORE_DATA;
+	} else {
+		return VKTOR_OK;
+	}	
 }
