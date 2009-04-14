@@ -76,7 +76,6 @@ vktor_parser_init()
  * Call vktor_buffer_free_all() to free an entire chain of buffers.
  * 
  * @param[in,out] buffer the buffer to free
- * @relates vktor_buffer_free_all 
  */
 static void 
 vktor_buffer_free(vktor_buffer *buffer)
@@ -95,7 +94,6 @@ vktor_buffer_free(vktor_buffer *buffer)
  * vktor_parser_free() to free all buffers attached to a parser. 
  * 
  * @param[in,out] buffer the first buffer in the list to free
- * @relates vktor_buffer_free
  */
 static void 
 vktor_buffer_free_all(vktor_buffer *buffer)
