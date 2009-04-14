@@ -29,14 +29,21 @@
 
 /* type definitions */
 
-/* parser status codes */
+/**
+ * Possible vktor parser status codes
+ */
 typedef enum {
-	VKTOR_ERROR,
-	VKTOR_OK,
-	VKTOR_MORE_DATA
+	VKTOR_ERROR,     /** < An error has occured */
+	VKTOR_OK,        /** < Everything is OK */
+	VKTOR_MORE_DATA  /** < More data is required in order to continue parsing */
 } vktor_status;
 
-/* parser token types */
+/**
+ * JSON token types
+ * 
+ * Whenever a token is encountered during the parsing process, the value of 
+ * vktor_parser#token_type is set to one of these values
+ */
 typedef enum {
 	VKTOR_TOKEN_NONE,
 	VKTOR_TOKEN_NULL,
@@ -51,24 +58,44 @@ typedef enum {
 	VKTOR_TOKEN_MAP_END
 } vktor_token;
 
+/**
+ * Error structure, signifying the error code and error message
+ * 
+ * Error structs must be freed using vktor_error_free()
+ */
 typedef struct _vktor_error_struct {
 	unsigned short  code;
 	char           *message;
 } vktor_error;
 
+/**
+ * Buffer struct, containing some text to parse along with an internal pointer
+ * and a link to the next buffer.
+ * 
+ * vktor internally holds text to be parsed as a linked list of buffers pushed
+ * by the user, so no memory reallocations are required. Whenever a buffer is 
+ * completely parsed, the parser will advance to the next buffer pointed by 
+ * #next_buff and will free the previous buffer
+ * 
+ * This is done internally by the parser
+ */
 typedef struct _vktor_buffer_struct {
-	char                        *text;
-	long                         size;
-	long                         ptr;
-	struct _vktor_buffer_struct *next_buff;	
+	char                        *text;      /** < buffer text */
+	long                         size;      /** < buffer size */
+	long                         ptr;       /** < internal buffer position */
+	struct _vktor_buffer_struct *next_buff;	/** < pointer to the next buffer */
 } vktor_buffer;
 
+/**
+ * Parser struct - this is the main object used by the user to parse a JSON 
+ * stream. 
+ */
 typedef struct _vktor_parser_struct {
-	vktor_buffer   *buffer;
-	vktor_buffer   *last_buffer;
-	vktor_token     token_type;
-	void           *token_value;
-	unsigned long   level;
+	vktor_buffer   *buffer;      /** < the current buffer being parsed */
+	vktor_buffer   *last_buffer; /** < a pointer to the last buffer */ 
+	vktor_token     token_type;  /** < current token type */
+	void           *token_value; /** < current token value, if any */
+	unsigned long   level;       /** < current nesting level */
 	// Some configuration options?
 } vktor_parser;
 

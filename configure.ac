@@ -42,9 +42,25 @@ AC_ARG_ENABLE([debug],
 AM_CONDITIONAL(ENABLE_DEBUG, test "x$enable_debug" = "xyes")  
 if test "x$enable_debug" = "xyes"; then
   AC_DEFINE_UNQUOTED(ENABLE_DEBUG, [1], [Enable various debugging options])
+  VKTOR_CFLAGS+="-Wall -g"
 else 
   AC_DEFINE_UNQUOTED(NODEBUG, [1], [Disable assertions and other debugging options])
 fi
+
+AC_SUBST(VKTOR_CFLAGS)
+
+# Initialize doxygen support
+DX_DOXYGEN_FEATURE(ON)
+DX_DOT_FEATURE(HIDDEN)
+DX_MAN_FEATURE(ON)
+DX_HTML_FEATURE(ON)
+DX_CHM_FEATURE(OFF)
+DX_CHI_FEATURE(HIDDEN)
+DX_RTF_FEATURE(HIDDEN)
+DX_XML_FEATURE(HIDDEN)
+DX_PDF_FEATURE(OFF)
+DX_PS_FEATURE(HIDDEN)
+DX_INIT_DOXYGEN($PACKAGE_NAME, [doxygen.cfg], [docs])
 
 AC_CONFIG_FILES([Makefile 
                  lib/Makefile
@@ -53,3 +69,12 @@ AC_CONFIG_FILES([Makefile
 AC_CONFIG_COMMANDS([default],[[ echo timestamp > stamp-h ]],[[]])
 
 AC_OUTPUT
+
+echo "
+  $PACKAGE_NAME version $PACKAGE_VERSION
+  Prefix.........: $prefix
+  Debug Build....: $enable_debug
+  C Compiler.....: $CC $CFLAGS $VKTOR_CFLAGS $CPPFLAGS
+  Linker.........: $LD $LDFLAGS $LIBS
+  Doxygen........: ${DX_DOXYGEN:-NONE}
+"

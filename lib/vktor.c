@@ -22,7 +22,12 @@
  * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
+ * OTHER DEALINGS IN THE SOFTWARE. 
+ */
+
+/**
+ * @file vktor.c 
+ * Main vktor library file
  */
 
 #include "config.h"
@@ -33,6 +38,9 @@
 #include <stdarg.h>
 #include <assert.h>
 
+/**
+ * Maximal error string length (mostly for internal use)
+ */
 #define VKTOR_ERR_STRLEN 1024
 
 /**
