@@ -28,6 +28,10 @@
 /**
  * @file vktor.c 
  * Main vktor library file
+ * 
+ * @todo Terminology: use 'object' for JSON object everywhere instead of map
+ * @todo Terminology: use 'struct' for JSON container (array or object)
+ * @todo Drop the 'vktor' prefix from static stuff
  */
 
 #include "config.h"
@@ -43,6 +47,9 @@
  */
 #define VKTOR_ERR_STRLEN 1024
 
+/**
+ * Memory allocation chunk size used when reading strings
+ */
 #ifndef VKTOR_STR_MEMCHUNK
 #define VKTOR_STR_MEMCHUNK 128
 #endif
@@ -52,10 +59,13 @@
  */
 #define eobuffer(b) (b->ptr >= b->size)
 
+/**
+ * Convenience macro to set an 'unexpected character' error
+ */
 #define vktor_error_set_unexpected_c(e, c)         \
 	vktor_error_set(e, VKTOR_ERR_UNEXPECTED_INPUT, \
 		"Unexpected character in input: %c", c)
-		
+
 /**
  * A bitmask representing any 'value' token 
  */
@@ -68,8 +78,15 @@
 						  VKTOR_TOKEN_ARRAY_START | \
 						  VKTOR_TOKEN_MAP_START
 
+/**
+ * Convenience macro to check if we are in a specific type of JSON struct
+ */
 #define nest_stack_in(p, c) (p->nest_stack[p->nest_ptr] == c)
 
+/**
+ * Convenience macro to easily set the expected next token map after a value
+ * token, taking current container struct (if any) into account.
+ */
 #define expect_next_value_token(p)                     \
 		switch(p->nest_stack[p->nest_ptr]) {           \
 			case VKTOR_CONTAINER_OBJECT:               \
@@ -423,6 +440,20 @@ nest_stack_pop(vktor_parser *parser, vktor_error **error)
 	return VKTOR_OK;
 }
 
+/**
+ * @brief Read a string token
+ * 
+ * Read a string token until the ending double-quote. Will decode any special
+ * escaped characters found along the way, and will gracefully handle buffer 
+ * replacement. 
+ * 
+ * Used by parser_read_string_token() and parser_read_objkey_token()
+ * 
+ * @param [in,out] parser Parser object
+ * @param [out]    error  Error object pointer pointer or NULL
+ * 
+ * @return Status code
+ */
 static vktor_status
 parser_read_string(vktor_parser *parser, vktor_error **error)
 {
@@ -462,9 +493,11 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 					break;
 					
 				case '\\':
+					/** @todo Handle quoted special characters */
 					// Some quoted character
 					
 				default:
+					/** @todo Handle control characters and unicode */
 					token[ptr++] = c;
 					if (ptr >= maxlen) {
 						maxlen = maxlen + VKTOR_STR_MEMCHUNK;
@@ -475,8 +508,7 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 							return VKTOR_ERROR;
 						}
 					}
-					
-					//~ printf("%c", c);
+
 					break;
 			}
 			
@@ -501,6 +533,17 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 	}
 }
 
+/**
+ * @brief Read a string token
+ * 
+ * Read a string token using parser_read_string() and set the next expected 
+ * token map accordingly
+ * 
+ * @param [in,out] parser Parser object
+ * @param [out]    error  Error object pointer pointer or null
+ * 
+ * @return Status code
+ */
 static vktor_status
 parser_read_string_token(vktor_parser *parser, vktor_error **error)
 {
@@ -518,8 +561,19 @@ parser_read_string_token(vktor_parser *parser, vktor_error **error)
 	return status;
 }
 
+/**
+ * @brief Read an object key token
+ * 
+ * Read an object key using parser_read_string() and set the next expected 
+ * token map accordingly
+ * 
+ * @param [in,out] parser Parser object
+ * @param [out]    error  Error object pointer pointer or null
+ * 
+ * @return Status code
+ */
 static vktor_status
-parser_read_keymap_token(vktor_parser *parser, vktor_error **error)
+parser_read_objkey_token(vktor_parser *parser, vktor_error **error)
 {
 	vktor_status status;
 	
@@ -537,6 +591,24 @@ parser_read_keymap_token(vktor_parser *parser, vktor_error **error)
 	return status;
 }
 
+/**
+ * @brief Read an "expected" token
+ * 
+ * Read an "expected" token - used when we guess in advance what the next token
+ * should be and want to try reading it. 
+ * 
+ * Used internally to read true, false, and null tokens.
+ * 
+ * If during the parsing the input does not match the expected token, an error
+ * is returned.
+ * 
+ * @param [in,out] parser Parser object
+ * @param [in]     expect Expected token as string
+ * @param [in]     explen Expected token length
+ * @param [out]    error  Error object pointer pointer or NULL
+ * 
+ * @return Status code
+ */
 static vktor_status
 parser_read_expectedstr(vktor_parser *parser, const char *expect, int explen, 
 	vktor_error **error)
@@ -585,6 +657,17 @@ parser_read_expectedstr(vktor_parser *parser, const char *expect, int explen,
 	return VKTOR_OK;
 }
 
+/**
+ * @brief Read an expected null token
+ * 
+ * Read an expected null token using parser_read_expectedstr(). Will also set 
+ * the next expected token map.
+ * 
+ * @param [in,out] parser Parser object
+ * @param [out]    error  Error object pointer pointer or NULL
+ * 
+ * @return Status code
+ */
 static vktor_status
 parser_read_null(vktor_parser *parser, vktor_error **error)
 {
@@ -601,6 +684,17 @@ parser_read_null(vktor_parser *parser, vktor_error **error)
 	return st;
 }
 
+/**
+ * @brief Read an expected true token
+ * 
+ * Read an expected true token using parser_read_expectedstr(). Will also set 
+ * the next expected token map.
+ * 
+ * @param [in,out] parser Parser object
+ * @param [out]    error  Error object pointer pointer or NULL
+ * 
+ * @return Status code
+ */
 static vktor_status
 parser_read_true(vktor_parser *parser, vktor_error **error)
 {
@@ -617,6 +711,17 @@ parser_read_true(vktor_parser *parser, vktor_error **error)
 	return st;
 }
 
+/**
+ * @brief Read an expected false token
+ * 
+ * Read an expected false token using parser_read_expectedstr(). Will also set 
+ * the next expected token map.
+ * 
+ * @param [in,out] parser Parser object
+ * @param [out]    error  Error object pointer pointer or NULL
+ * 
+ * @return Status code
+ */
 static vktor_status
 parser_read_false(vktor_parser *parser, vktor_error **error)
 {
@@ -700,7 +805,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 		if (parser->token_resume) {
 		    switch (parser->token_type) {
 		    	case VKTOR_TOKEN_MAP_KEY:
-		    		return parser_read_keymap_token(parser, error);
+		    		return parser_read_objkey_token(parser, error);
 		    		break;
 		    		
 		    	case VKTOR_TOKEN_STRING:
@@ -780,7 +885,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					parser->buffer->ptr++;	 
 					
 					if (parser->expected_t & VKTOR_TOKEN_MAP_KEY) {
-						return parser_read_keymap_token(parser, error);
+						return parser_read_objkey_token(parser, error);
 					} else {
 						return parser_read_string_token(parser, error);
 					}
@@ -883,7 +988,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 				case '\r':
 				case '\t':
 					// Whitespace - do nothing!
-					// TODO: read all whitespace without looping?
+					/** @todo consinder: read all whitespace without looping? */
 					break;
 					
 				case 't':
