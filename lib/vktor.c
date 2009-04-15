@@ -72,12 +72,12 @@
 
 #define expect_next_value_token(p)                     \
 		switch(p->nest_stack[p->nest_ptr]) {           \
-			case NEST_MAP:                             \
+			case VKTOR_CONTAINER_OBJECT:                             \
 				p->expected_t = VKTOR_TOKEN_COMMA |    \
 				                VKTOR_TOKEN_MAP_END;   \
 				break;                                 \
 				                                       \
-			case NEST_ARRAY:                           \
+			case VKTOR_CONTAINER_ARRAY:                           \
 				p->expected_t = VKTOR_TOKEN_COMMA |    \
 				                VKTOR_TOKEN_ARRAY_END; \
 				break;                                 \
@@ -86,15 +86,6 @@
 				p->expected_t = VKTOR_TOKEN_NONE;      \
 				break;                                 \
 		}                                              \
-
-/**
- * Possible nesting states
- */						  
-enum {
-	NEST_NULL = 0,
-	NEST_ARRAY,
-	NEST_MAP
-};
 		  
 /**
  * @brief Initialize a new parser 
@@ -125,7 +116,7 @@ vktor_parser_init(int max_nest)
 	parser->expected_t   = VKTOR_VALUE_TOKEN;
 
 	// set up nesting stack
-	parser->nest_stack   = calloc(sizeof(char), max_nest);
+	parser->nest_stack   = calloc(sizeof(vktor_container), max_nest);
 	parser->nest_ptr     = 0;
 	parser->max_nest     = max_nest;
 			
@@ -388,7 +379,8 @@ parser_set_token(vktor_parser *parser, vktor_token token, void *value)
  * @return Status code - VKTOR_OK or VKTOR_ERROR
  */
 static vktor_status
-nest_stack_add(vktor_parser *parser, char nest_type, vktor_error **error)
+nest_stack_add(vktor_parser *parser, vktor_container nest_type, 
+	vktor_error **error)
 {
 	assert(parser != NULL);
 	
@@ -531,7 +523,7 @@ parser_read_keymap_token(vktor_parser *parser, vktor_error **error)
 {
 	vktor_status status;
 	
-	assert(nest_stack_in(parser, NEST_MAP));
+	assert(nest_stack_in(parser, VKTOR_CONTAINER_OBJECT));
 	
 	// Read string	
 	parser->token_type = VKTOR_TOKEN_MAP_KEY;
@@ -642,6 +634,40 @@ parser_read_false(vktor_parser *parser, vktor_error **error)
 }
 
 /**
+ * @brief Get the current nesting depth
+ * 
+ * Get the current array/object nesting depth of the current token the parser
+ * is pointing to
+ * 
+ * @param [in] parser Parser object
+ * 
+ * @return nesting level - 0 means top level
+ */
+//int
+//vktor_get_depth(vktor_parser *parser) 
+//{
+//	return parser->nest_ptr;	
+//}
+
+/**
+ * @brief Get the current container type
+ * 
+ * Get the container type (object, array or none) containing the current token
+ * pointed to by the parser
+ * 
+ * @param [in] parser Parser object
+ * 
+ * @return A vktor_container value or VKTOR_CONTAINER_NONE if we are in the top 
+ *   level
+ */
+vktor_container
+vktor_get_current_container(vktor_parser *parser)
+{
+	assert(parser != NULL);
+	return parser->nest_stack[parser->nest_ptr];
+}
+
+/**
  * @brief Parse some JSON text and return on the next token
  * 
  * Parse the text buffer until the next JSON token is encountered
@@ -712,7 +738,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 						return VKTOR_ERROR;
 					}
 					
-					if (nest_stack_add(parser, NEST_MAP, error) == VKTOR_ERROR) {
+					if (nest_stack_add(parser, VKTOR_CONTAINER_OBJECT, error) == VKTOR_ERROR) {
 						return VKTOR_ERROR;
 					}
 					
@@ -731,7 +757,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 						return VKTOR_ERROR;
 					}
 					
-					if (nest_stack_add(parser, NEST_ARRAY, error) == VKTOR_ERROR) {
+					if (nest_stack_add(parser, VKTOR_CONTAINER_ARRAY, error) == VKTOR_ERROR) {
 						return VKTOR_ERROR;
 					}
 					
@@ -768,11 +794,11 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					}
 					
 					switch(parser->nest_stack[parser->nest_ptr]) {
-						case NEST_MAP:
+						case VKTOR_CONTAINER_OBJECT:
 							parser->expected_t = VKTOR_TOKEN_MAP_KEY;
 							break;
 							
-						case NEST_ARRAY:
+						case VKTOR_CONTAINER_ARRAY:
 							parser->expected_t = VKTOR_VALUE_TOKEN;
 							break;
 							
@@ -793,7 +819,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					}
 					
 					// Colon is only expected inside maps
-					assert(nest_stack_in(parser, NEST_MAP));
+					assert(nest_stack_in(parser, VKTOR_CONTAINER_OBJECT));
 					
 					// Next we expected a value
 					parser->expected_t = VKTOR_VALUE_TOKEN;
@@ -801,7 +827,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					
 				case '}':
 					if (! (parser->expected_t & VKTOR_TOKEN_MAP_END &&
-					       nest_stack_in(parser, NEST_MAP))) {
+					       nest_stack_in(parser, VKTOR_CONTAINER_OBJECT))) {
 					
 						vktor_error_set_unexpected_c(error, c);
 						return VKTOR_ERROR;
@@ -828,7 +854,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					
 				case ']':
 					if (! (parser->expected_t & VKTOR_TOKEN_ARRAY_END &&
-					       nest_stack_in(parser, NEST_ARRAY))) { 
+					       nest_stack_in(parser, VKTOR_CONTAINER_ARRAY))) { 
 					
 						vktor_error_set_unexpected_c(error, c);
 						return VKTOR_ERROR;

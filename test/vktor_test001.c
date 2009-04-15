@@ -6,9 +6,10 @@
 #define MAX_BUFFSIZE 64
 #define INDENT_STR "  "
 
-#define print_indent for (i = 0; i < indent; i++) { printf(INDENT_STR);	}
+#define print_indent(s) int i; for (i = 0; i < indent; i++) { printf(s);	}
 
-int indent = 0;
+int indent      = 0;
+int first_token = 1;
 
 static char*
 copy_string(char *src, int src_len)
@@ -22,54 +23,86 @@ copy_string(char *src, int src_len)
 	return dest;	
 }
 
-static void
-handle_token(vktor_token type, void * value, int size) 
+static void 
+print_value(const char *value, vktor_container nest)
 {
-	int   i;
+	if (nest != VKTOR_CONTAINER_OBJECT) { 
+		if (indent > 0) {
+			printf("%s\n", first_token ? "" : ",");
+			print_indent(INDENT_STR);
+		}		
+	}
+	
+	printf("%s", value);
+}
+
+static void
+handle_token(vktor_token type, void * value, int size, vktor_container nest) 
+{
 	char *str;
 	
 	switch(type) {
 		case VKTOR_TOKEN_ARRAY_START:
-			print_indent;
-			printf("(\n");
+			print_value("[", nest);
 			indent++;
+			first_token = 1;
 			break;
 			
 		case VKTOR_TOKEN_MAP_START:
-			print_indent;
-			printf("{\n");
+			print_value("{", nest);
 			indent++;
+			first_token = 1;
 			break;
 		
 		case VKTOR_TOKEN_MAP_KEY:
-			print_indent;
+			printf("%s\n", first_token ? "" : ",");
+			print_indent(INDENT_STR);
 			str = copy_string((char *) value, size);
-			printf("%s:\n", str);
+			printf("%s => ", str);
 			free(str);
+			first_token = 0;
 			break;
 		
 		case VKTOR_TOKEN_STRING:
-			print_indent;
 			str = copy_string((char *) value, size);
-			printf("\"%s\"\n", str);
+			print_value("", nest);
+			printf("\"%s\"", str);
 			free(str);
+			first_token = 0;
 			break;
 			
 		case VKTOR_TOKEN_ARRAY_END:
 			indent--;
-			print_indent;
-			printf(")\n");
+			first_token = 1;
+			print_value("]", nest);
+			first_token = 0;
 			break;
 		
 		case VKTOR_TOKEN_MAP_END:
 			indent--;
-			print_indent;
-			printf("}\n");
+			first_token = 1;
+			print_value("}", VKTOR_CONTAINER_NONE);
+			first_token = 0;
 			break;
 		
+		case VKTOR_TOKEN_NULL:
+			print_value("null", nest);
+			first_token = 0;
+			break;
+		
+		case VKTOR_TOKEN_TRUE:
+			print_value("true", nest);
+			first_token = 0;
+			break;
+		
+		case VKTOR_TOKEN_FALSE:
+			print_value("false", nest);
+			first_token = 0;
+			break;
+			
 		default:  // not yet handled stuff
-			print_indent;
-			printf(" -- some value (%d) -- \n", type);
+			print_value(" -- unknown -- ", nest);
+			first_token = 0;
 			break;
 	}
 }
@@ -77,30 +110,32 @@ handle_token(vktor_token type, void * value, int size)
 int 
 main(int argc, char *argv[]) 
 {
-	vktor_parser *parser;
-	vktor_status  status;
-	vktor_error  *error;
-	char         *buffer;
-	size_t        read_bytes;
-	int           done = 0;
+	vktor_parser    *parser;
+	vktor_status     status;
+	vktor_error     *error;
+	vktor_container  nest;
+	char            *buffer;
+	size_t           read_bytes;
+	int              done = 0;
 		
 	parser = vktor_parser_init(128);
 	
 	do {
+		nest = vktor_get_current_container(parser);
 		status = vktor_parse(parser, &error);
 		
 		switch (status) {
 			
 			case VKTOR_OK:
 				// Print the token
-				handle_token(parser->token_type, parser->token_value, 
-					parser->token_size);
+				handle_token(parser->token_type, parser->token_value,
+					parser->token_size, nest);
 				break;
 				
 			case VKTOR_COMPLETE: 
 				// Print the token
 				handle_token(parser->token_type, parser->token_value, 
-					parser->token_size);
+					parser->token_size, nest);
 				printf("\nDone.\n");
 				done = 1;
 				break;

@@ -53,6 +53,15 @@ typedef enum {
 } vktor_token;
 
 /**
+ * Possible JSON container types
+ */
+typedef enum {
+	VKTOR_CONTAINER_NONE,  /**< No container */
+	VKTOR_CONTAINER_ARRAY, /**< Array */
+	VKTOR_CONTAINER_OBJECT /**< Object (AKA map, associative array) */
+} vktor_container; 
+
+/**
  * Possible vktor parser status codes
  */
 typedef enum {
@@ -106,16 +115,16 @@ typedef struct _vktor_buffer_struct {
  * stream. 
  */
 typedef struct _vktor_parser_struct {
-	vktor_buffer   *buffer;       /**< the current buffer being parsed */
-	vktor_buffer   *last_buffer;  /**< a pointer to the last buffer */ 
-	vktor_token     token_type;   /**< current token type */
-	void           *token_value;  /**< current token value, if any */
-	int             token_size;   /**< current token value length, if any */
-	char            token_resume; /**< current token is only half read */        
-	int             expected_t;   /**< bitmask of possible expected tokens */
-	char           *nest_stack;   /**< array containing current nesting stack */
-	int             nest_ptr;     /**< pointer to the current nesting level */
-	int             max_nest;     /**< maximal nesting level */
+	vktor_buffer    *buffer;       /**< the current buffer being parsed */
+	vktor_buffer    *last_buffer;  /**< a pointer to the last buffer */ 
+	vktor_token      token_type;   /**< current token type */
+	void            *token_value;  /**< current token value, if any */
+	int              token_size;   /**< current token value length, if any */
+	char             token_resume; /**< current token is only half read */        
+	int              expected_t;   /**< bitmask of possible expected tokens */
+	vktor_container *nest_stack;   /**< array holding current nesting stack */
+	int              nest_ptr;     /**< pointer to the current nesting level */
+	int              max_nest;     /**< maximal nesting level */
 	// Some configuration options?
 } vktor_parser;
 
@@ -190,6 +199,30 @@ vktor_status vktor_read_buffer(vktor_parser *parser, char *text, long text_len,
  */
 vktor_status vktor_parse(vktor_parser *parser, vktor_error **error);
 		  
+/**
+ * @brief Get the current nesting depth
+ * 
+ * Get the current array/object nesting depth of the current token the parser
+ * is pointing to
+ * 
+ * @param [in] parser Parser object
+ * 
+ * @return nesting level - 0 means top level
+ */
+//int vktor_get_depth(vktor_parser *parser);
+
+/**
+ * @brief Get the current container type
+ * 
+ * Get the container type (object, array or none) containing the current token
+ * pointed to by the parser
+ * 
+ * @param [in] parser Parser object
+ * 
+ * @return A vktor_container value or VKTOR_CONTAINER_NONE if we are in the top 
+ *   level
+ */
+vktor_container vktor_get_current_container(vktor_parser *parser);
 
 #define _VKTOR_H
 #endif /* VKTOR_H */
