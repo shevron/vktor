@@ -27,11 +27,21 @@
 
 # vktor test programs automake Makefile template
 
-noinst_PROGRAMS = vktortest-json2yaml
+check_PROGRAMS = vktor-json2yaml
 
-vktortest_json2yaml_SOURCES = vktortest-json2yaml.c
+vktor_json2yaml_SOURCES = vktor-json2yaml.c
 
 AM_CFLAGS = $(VKTOR_CFLAGS)
 AM_CPPFLAGS = -I$(top_srcdir)/lib
 
 LDADD = $(top_srcdir)/lib/libvktor.la
+
+TESTS_ENVIRONMENT = OUTDIR=tests ./vktor-json2yaml-runtest.sh 
+TESTS = tests/*.json
+
+EXTRA_DIST = vktor-json2yaml-runtest.sh \
+             $(TESTS) \
+			 tests/*.exp
+
+CLEANFILES = tests/*.out   \
+             tests/*.diff

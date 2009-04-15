@@ -52,7 +52,7 @@
  */
 #define eobuffer(b) (b->ptr >= b->size)
 
-#define vktor_error_set_unexpected_c(e, c) \
+#define vktor_error_set_unexpected_c(e, c)         \
 	vktor_error_set(e, VKTOR_ERR_UNEXPECTED_INPUT, \
 		"Unexpected character in input: %c", c)
 		
@@ -72,12 +72,12 @@
 
 #define expect_next_value_token(p)                     \
 		switch(p->nest_stack[p->nest_ptr]) {           \
-			case VKTOR_CONTAINER_OBJECT:                             \
+			case VKTOR_CONTAINER_OBJECT:               \
 				p->expected_t = VKTOR_TOKEN_COMMA |    \
 				                VKTOR_TOKEN_MAP_END;   \
 				break;                                 \
 				                                       \
-			case VKTOR_CONTAINER_ARRAY:                           \
+			case VKTOR_CONTAINER_ARRAY:                \
 				p->expected_t = VKTOR_TOKEN_COMMA |    \
 				                VKTOR_TOKEN_ARRAY_END; \
 				break;                                 \
@@ -85,7 +85,7 @@
 			default:                                   \
 				p->expected_t = VKTOR_TOKEN_NONE;      \
 				break;                                 \
-		}                                              \
+		}
 		  
 /**
  * @brief Initialize a new parser 
