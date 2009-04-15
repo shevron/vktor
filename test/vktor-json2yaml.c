@@ -55,9 +55,10 @@
 	if (nest == VKTOR_CONTAINER_ARRAY) { \
 		print_indent(s);                 \
 		printf("- ");                    \
-	}                                    \
+	}
 
 int indent      = 0;
+int is_root     = 1;
 
 static char*
 copy_string(char *src, int src_len)
@@ -77,23 +78,34 @@ handle_token(vktor_token type, void * value, int size, vktor_container nest)
 	char *str;
 	int   i;
 	
+	assert(indent >= 0);
+	
 	switch(type) {
 		case VKTOR_TOKEN_ARRAY_START:
-			print_array_indent_dash(INDENT_STR);
-			printf("\n");
-			indent++;
+			if (! is_root) {
+				print_array_indent_dash(INDENT_STR);
+				printf("\n");
+				indent++;
+			} else {
+				is_root = 0;
+			}
 			break;
 			
 		case VKTOR_TOKEN_MAP_START:
-			print_array_indent_dash(INDENT_STR);
-			printf("\n");
-			indent++;
+			if (! is_root) {
+				print_array_indent_dash(INDENT_STR);
+				printf("\n");
+				indent++;
+			} else {
+				is_root = 0;
+			}
+			
 			break;
 		
 		case VKTOR_TOKEN_MAP_KEY:
 			print_indent(INDENT_STR);
 			str = copy_string((char *) value, size);
-			printf("\"%s\" : ", str);
+			printf("\"%s\": ", str);
 			free(str);
 			break;
 		
@@ -106,12 +118,10 @@ handle_token(vktor_token type, void * value, int size, vktor_container nest)
 			
 		case VKTOR_TOKEN_ARRAY_END:
 			indent--;
-			assert(indent >= 0);
 			break;
 		
 		case VKTOR_TOKEN_MAP_END:
 			indent--;
-			assert(indent >= 0);
 			break;
 		
 		case VKTOR_TOKEN_NULL:
@@ -148,8 +158,6 @@ main(int argc, char *argv[])
 	int              done = 0, ret = 0;
 		
 	parser = vktor_parser_init(128);
-	
-	printf("jsondata:");
 	
 	do {
 		nest = vktor_get_current_container(parser);
