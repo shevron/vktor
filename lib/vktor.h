@@ -47,8 +47,7 @@ typedef enum {
 	VKTOR_TOKEN_MAP_START   =  1 << 7,
 	VKTOR_TOKEN_MAP_KEY     =  1 << 8,
 	VKTOR_TOKEN_MAP_END     =  1 << 9,
-	VKTOR_TOKEN_COMMA       =  1 << 10,
-	VKTOR_TOKEN_COLON       =  1 << 11
+	VKTOR_TOKEN_COMMA       =  1 << 10
 } vktor_token;
 
 /**

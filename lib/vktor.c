@@ -95,20 +95,19 @@ vktor_parser_init(int max_nest)
 		return NULL;
 	}
 		
-	parser->buffer       = NULL;
-	parser->last_buffer  = NULL;
-	parser->token_type   = VKTOR_TOKEN_NONE;
-	parser->token_value  = NULL;
-	parser->token_resume = 0;
+	parser->buffer      = NULL;
+	parser->last_buffer = NULL;
+	parser->token_type  = VKTOR_TOKEN_NONE;
+	parser->token_value = NULL;
 	
 	// set expectated tokens
-	parser->expected_t   = VKTOR_VALUE_TOKEN;
+	parser->expected_t = VKTOR_VALUE_TOKEN;
 
 	// set up nesting stack
-	parser->nest_stack   = calloc(sizeof(char), max_nest);
-	parser->nest_ptr     = 0;
-	parser->max_nest     = max_nest;
-			
+	parser->nest_stack = calloc(sizeof(char), max_nest);
+	parser->nest_ptr   = 0;
+	parser->max_nest   = max_nest;
+		
 	return parser;
 }
 
@@ -416,28 +415,14 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 {
 	char  c;
 	char *token;
-	int   ptr, maxlen;
-	int   done = 0;
+	int   ptr, maxlen, done;
 	
 	assert(parser != NULL);
 	
-	if (parser->token_resume) {
-		ptr = parser->token_size;
-		maxlen = ptr + VKTOR_STR_MEMCHUNK;
-		token = realloc(parser->token_value, sizeof(char) * maxlen);
-		
-	} else {
-		token  = malloc(VKTOR_STR_MEMCHUNK * sizeof(char));
-		maxlen = VKTOR_STR_MEMCHUNK;
-		ptr    = 0;
-	}
-	
-	if (token == NULL) {
-		vktor_error_set(error, VKTOR_ERR_OUT_OF_MEMORY, 
-			"unable to allocate %d bytes for string parsing", 
-			VKTOR_STR_MEMCHUNK);
-		return VKTOR_ERROR;
-	}
+	token  = malloc(VKTOR_STR_MEMCHUNK * sizeof(char));
+	maxlen = VKTOR_STR_MEMCHUNK;
+	ptr    = 0;
+	done   = 0;
 	
 	while (parser->buffer != NULL) {
 		while (! eobuffer(parser->buffer)) {
@@ -456,15 +441,10 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 					token[ptr++] = c;
 					if (ptr >= maxlen) {
 						maxlen = maxlen + VKTOR_STR_MEMCHUNK;
-						if ((token = realloc(token, maxlen * sizeof(char))) == NULL) {
-							vktor_error_set(error, VKTOR_ERR_OUT_OF_MEMORY, 
-								"unable to allocate %d more bytes for string parsing",
-								VKTOR_STR_MEMCHUNK);
-							return VKTOR_ERROR;
-						}
+						token = realloc(token, maxlen * sizeof(char));
 					}
 					
-					//~ printf("%c", c);
+					printf("%c", c);
 					break;
 			}
 			
@@ -478,65 +458,17 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 	
 	parser->token_value = (void *) token;
 	parser->token_size  = ptr;
-	
+	 
 	// Check if we need more data
-	if (! done) {
-		parser->token_resume = 1;
-		return VKTOR_MORE_DATA;
-	} else {
-		parser->token_resume = 0;
-		return VKTOR_OK;
-	}
-}
-
-static vktor_status
-parser_read_string_token(vktor_parser *parser, vktor_error **error)
-{
-	vktor_status status;
 	
-	// Read string	
-	parser->token_type = VKTOR_TOKEN_STRING;
-	status = parser_read_string(parser, error);
+	// Set the token type
 	
-	// Set next expected token
-	if (status == VKTOR_OK) {
-		switch(parser->nest_stack[parser->nest_ptr]) {
-			case NEST_MAP:
-				parser->expected_t = VKTOR_TOKEN_COMMA | 
-				                     VKTOR_TOKEN_MAP_END;
-				break;
-				
-			case NEST_ARRAY:
-				parser->expected_t = VKTOR_TOKEN_COMMA | 
-				                     VKTOR_TOKEN_ARRAY_END;
-				break;
-				
-			default:
-				parser->expected_t = VKTOR_TOKEN_NONE;
-				break;
-		}
-	}
+	// Handle the next expected token
 	
-	return status;
-}
-
-static vktor_status
-parser_read_keymap_token(vktor_parser *parser, vktor_error **error)
-{
-	vktor_status status;
 	
-	assert(nest_stack_in(parser, NEST_MAP));
-	
-	// Read string	
-	parser->token_type = VKTOR_TOKEN_MAP_KEY;
-	status = parser_read_string(parser, error);
-	
-	// Set next expected token
-	if (status == VKTOR_OK) {
-		parser->expected_t = VKTOR_TOKEN_COLON;
-	}
-	
-	return status;
+	if (done) {
+			
+	}		
 }
 
 /**
@@ -567,26 +499,6 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 	// Do we have a buffer to work with?
 	while (parser->buffer != NULL) {
 		done = 0;
-		
-		// Do we need to continue reading the previous token?
-		if (parser->token_resume) {
-		    switch (parser->token_type) {
-		    	case VKTOR_TOKEN_MAP_KEY:
-		    		return parser_read_keymap_token(parser, error);
-		    		break;
-		    		
-		    	case VKTOR_TOKEN_STRING:
-		    		return parser_read_string_token(parser, error);
-		    		break;
-		    	
-		    	default:
-		    		vktor_error_set(error, VKTOR_ERR_INTERNAL_ERR, 
-		    			"token resume flag is set but token type %d is unexpected",
-		    			parser->token_type);
-		    		return VKTOR_ERROR;
-		    		break;
-		    }
-		}
 		
 		while (! eobuffer(parser->buffer)) {
 			c = parser->buffer->text[parser->buffer->ptr];
@@ -637,13 +549,12 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 						return VKTOR_ERROR;
 					}
 					
-					parser->buffer->ptr++;	 
-					
-					if (parser->expected_t & VKTOR_TOKEN_MAP_KEY) {
-						return parser_read_keymap_token(parser, error);
-					} else {
-						return parser_read_string_token(parser, error);
+					if (parser->expected_t != VKTOR_TOKEN_MAP_KEY) {
+						parser->expected_t = VKTOR_TOKEN_STRING;
 					}
+										
+					parser->buffer->ptr++;	 
+					return parser_read_string(parser, error);
 					
 					break;
 				
@@ -669,22 +580,9 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 							break;
 					}
 					
-					//~ printf(",");
+					printf(",");
 					break;
 				
-				case ':':
-					if (! parser->expected_t & VKTOR_TOKEN_COLON) {
-						vktor_error_set_unexpected_c(error, c);
-						return VKTOR_ERROR;
-					}
-					
-					// Colon is only expected inside maps
-					assert(nest_stack_in(parser, NEST_MAP));
-					
-					// Next we expected a value
-					parser->expected_t = VKTOR_VALUE_TOKEN;
-					break;
-					
 				case '}':
 					if (! (parser->expected_t & VKTOR_TOKEN_MAP_END &&
 					       nest_stack_in(parser, NEST_MAP))) {
@@ -699,16 +597,6 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 						return VKTOR_ERROR;
 					} 
 					
-					if (parser->nest_ptr > 0) {
-						// Next can be either a comma, or end of array / map
-						parser->expected_t = VKTOR_TOKEN_COMMA | 
-											 VKTOR_TOKEN_MAP_END | 
-											 VKTOR_TOKEN_ARRAY_END;
-					} else {
-						// Next can be nothing
-						parser->expected_t = VKTOR_TOKEN_NONE;
-					}
-					                     
 					done = 1;
 					break;
 					
@@ -725,16 +613,6 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 						return VKTOR_ERROR;
 					} 
 					
-					if (parser->nest_ptr > 0) {
-						// Next can be either a comma, or end of array / map
-						parser->expected_t = VKTOR_TOKEN_COMMA | 
-											 VKTOR_TOKEN_MAP_END | 
-											 VKTOR_TOKEN_ARRAY_END;
-					} else {
-						// Next can be nothing
-						parser->expected_t = VKTOR_TOKEN_NONE;
-					}
-					                     
 					done = 1;
 					break;
 					
@@ -750,11 +628,11 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 				case 'f':
 				case 'n':
 					// true, false, null
-					//~ printf("=%c", c);
+					printf("=%c", c);
 					break;
 					
 				default:
-					//~ printf("%c", c);
+					printf("%c", c);
 					// Check for numbers
 					break;
 			}
