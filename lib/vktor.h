@@ -38,17 +38,18 @@
 typedef enum {
 	VKTOR_TOKEN_NONE        =  0,
 	VKTOR_TOKEN_NULL        =  1,
-	VKTOR_TOKEN_BOOL        =  1 << 1,
-	VKTOR_TOKEN_INT         =  1 << 2,
-	VKTOR_TOKEN_FLOAT       =  1 << 3,
-	VKTOR_TOKEN_STRING      =  1 << 4,
-	VKTOR_TOKEN_ARRAY_START =  1 << 5,
-	VKTOR_TOKEN_ARRAY_END   =  1 << 6,
-	VKTOR_TOKEN_MAP_START   =  1 << 7,
-	VKTOR_TOKEN_MAP_KEY     =  1 << 8,
-	VKTOR_TOKEN_MAP_END     =  1 << 9,
-	VKTOR_TOKEN_COMMA       =  1 << 10,
-	VKTOR_TOKEN_COLON       =  1 << 11
+	VKTOR_TOKEN_FALSE       =  1 << 1,
+	VKTOR_TOKEN_TRUE        =  1 << 2,
+	VKTOR_TOKEN_INT         =  1 << 3,
+	VKTOR_TOKEN_FLOAT       =  1 << 4,
+	VKTOR_TOKEN_STRING      =  1 << 5,
+	VKTOR_TOKEN_ARRAY_START =  1 << 6,
+	VKTOR_TOKEN_ARRAY_END   =  1 << 7,
+	VKTOR_TOKEN_MAP_START   =  1 << 8,
+	VKTOR_TOKEN_MAP_KEY     =  1 << 9,
+	VKTOR_TOKEN_MAP_END     =  1 << 10,
+	VKTOR_TOKEN_COMMA       =  1 << 11,
+	VKTOR_TOKEN_COLON       =  1 << 12
 } vktor_token;
 
 /**
