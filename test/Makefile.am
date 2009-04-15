@@ -27,9 +27,9 @@
 
 # vktor test programs automake Makefile template
 
-noinst_PROGRAMS = vktor_test001
+noinst_PROGRAMS = vktortest-json2yaml
 
-vktor_test001_SOURCES = vktor_test001.c
+vktortest_json2yaml_SOURCES = vktortest-json2yaml.c
 
 AM_CFLAGS = $(VKTOR_CFLAGS)
 AM_CPPFLAGS = -I$(top_srcdir)/lib

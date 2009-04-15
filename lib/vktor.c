@@ -643,11 +643,11 @@ parser_read_false(vktor_parser *parser, vktor_error **error)
  * 
  * @return nesting level - 0 means top level
  */
-//int
-//vktor_get_depth(vktor_parser *parser) 
-//{
-//	return parser->nest_ptr;	
-//}
+int
+vktor_get_depth(vktor_parser *parser) 
+{
+	return parser->nest_ptr;	
+}
 
 /**
  * @brief Get the current container type

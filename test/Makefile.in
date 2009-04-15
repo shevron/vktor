@@ -59,7 +59,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-noinst_PROGRAMS = vktor_test001$(EXEEXT)
+noinst_PROGRAMS = vktortest-json2yaml$(EXEEXT)
 subdir = test
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -73,10 +73,10 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 PROGRAMS = $(noinst_PROGRAMS)
-am_vktor_test001_OBJECTS = vktor_test001.$(OBJEXT)
-vktor_test001_OBJECTS = $(am_vktor_test001_OBJECTS)
-vktor_test001_LDADD = $(LDADD)
-vktor_test001_DEPENDENCIES = $(top_srcdir)/lib/libvktor.la
+am_vktortest_json2yaml_OBJECTS = vktortest-json2yaml.$(OBJEXT)
+vktortest_json2yaml_OBJECTS = $(am_vktortest_json2yaml_OBJECTS)
+vktortest_json2yaml_LDADD = $(LDADD)
+vktortest_json2yaml_DEPENDENCIES = $(top_srcdir)/lib/libvktor.la
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__depfiles_maybe = depfiles
@@ -89,8 +89,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(vktor_test001_SOURCES)
-DIST_SOURCES = $(vktor_test001_SOURCES)
+SOURCES = $(vktortest_json2yaml_SOURCES)
+DIST_SOURCES = $(vktortest_json2yaml_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -227,7 +227,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-vktor_test001_SOURCES = vktor_test001.c
+vktortest_json2yaml_SOURCES = vktortest-json2yaml.c
 AM_CFLAGS = $(VKTOR_CFLAGS)
 AM_CPPFLAGS = -I$(top_srcdir)/lib
 LDADD = $(top_srcdir)/lib/libvktor.la
@@ -271,9 +271,9 @@ clean-noinstPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
-vktor_test001$(EXEEXT): $(vktor_test001_OBJECTS) $(vktor_test001_DEPENDENCIES) 
-	@rm -f vktor_test001$(EXEEXT)
-	$(LINK) $(vktor_test001_OBJECTS) $(vktor_test001_LDADD) $(LIBS)
+vktortest-json2yaml$(EXEEXT): $(vktortest_json2yaml_OBJECTS) $(vktortest_json2yaml_DEPENDENCIES) 
+	@rm -f vktortest-json2yaml$(EXEEXT)
+	$(LINK) $(vktortest_json2yaml_OBJECTS) $(vktortest_json2yaml_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -281,7 +281,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vktor_test001.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vktortest-json2yaml.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

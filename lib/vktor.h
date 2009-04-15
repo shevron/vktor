@@ -75,6 +75,7 @@ typedef enum {
  * Possible error codes used in vktor_error->code 
  */
 typedef enum {
+	VKTOR_ERR_NONE,             /**< no error */
 	VKTOR_ERR_OUT_OF_MEMORY,    /**< can't allocate memory */
 	VKTOR_ERR_UNEXPECTED_INPUT, /**< unexpected characters in input buffer */
 	VKTOR_ERR_INCOMPLETE_DATA,  /**< can't finish parsing without more data */
@@ -209,7 +210,7 @@ vktor_status vktor_parse(vktor_parser *parser, vktor_error **error);
  * 
  * @return nesting level - 0 means top level
  */
-//int vktor_get_depth(vktor_parser *parser);
+int vktor_get_depth(vktor_parser *parser);
 
 /**
  * @brief Get the current container type
