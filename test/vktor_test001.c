@@ -1,8 +1,78 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <vktor.h>
 
 #define MAX_BUFFSIZE 64
+#define INDENT_STR "  "
+
+#define print_indent for (i = 0; i < indent; i++) { printf(INDENT_STR);	}
+
+int indent = 0;
+
+static char*
+copy_string(char *src, int src_len)
+{
+	char *dest;
+	
+	dest = malloc(sizeof(char) * (src_len + 1));
+	dest = memcpy(dest, src, src_len);
+	dest[src_len] = '\0';
+	
+	return dest;	
+}
+
+static void
+handle_token(vktor_token type, void * value, int size) 
+{
+	int   i;
+	char *str;
+	
+	switch(type) {
+		case VKTOR_TOKEN_ARRAY_START:
+			print_indent;
+			printf("(\n");
+			indent++;
+			break;
+			
+		case VKTOR_TOKEN_MAP_START:
+			print_indent;
+			printf("{\n");
+			indent++;
+			break;
+		
+		case VKTOR_TOKEN_MAP_KEY:
+			print_indent;
+			str = copy_string((char *) value, size);
+			printf("%s:\n", str);
+			free(str);
+			break;
+		
+		case VKTOR_TOKEN_STRING:
+			print_indent;
+			str = copy_string((char *) value, size);
+			printf("\"%s\"\n", str);
+			free(str);
+			break;
+			
+		case VKTOR_TOKEN_ARRAY_END:
+			indent--;
+			print_indent;
+			printf(")\n");
+			break;
+		
+		case VKTOR_TOKEN_MAP_END:
+			indent--;
+			print_indent;
+			printf("}\n");
+			break;
+		
+		default:  // not yet handled stuff
+			print_indent;
+			printf(" -- some value (%d) -- \n", type);
+			break;
+	}
+}
 
 int 
 main(int argc, char *argv[]) 
@@ -22,11 +92,15 @@ main(int argc, char *argv[])
 		switch (status) {
 			
 			case VKTOR_OK:
-				printf("Token: %d\n", parser->token_type);
-				// Do something
+				// Print the token
+				handle_token(parser->token_type, parser->token_value, 
+					parser->token_size);
 				break;
 				
 			case VKTOR_COMPLETE: 
+				// Print the token
+				handle_token(parser->token_type, parser->token_value, 
+					parser->token_size);
 				printf("\nDone.\n");
 				done = 1;
 				break;
