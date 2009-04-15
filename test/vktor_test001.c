@@ -14,7 +14,7 @@ main(int argc, char *argv[])
 	size_t        read_bytes;
 	int           done = 0;
 		
-	parser = vktor_parser_init();
+	parser = vktor_parser_init(128);
 	
 	do {
 		status = vktor_parse(parser, &error);
@@ -22,12 +22,13 @@ main(int argc, char *argv[])
 		switch (status) {
 			
 			case VKTOR_OK:
-				printf(" Ok --\n");
+				printf("Token: %d\n", parser->token_type);
 				// Do something
 				break;
 				
 			case VKTOR_COMPLETE: 
 				printf("\nDone.\n");
+				done = 1;
 				break;
 				
 			case VKTOR_ERROR:

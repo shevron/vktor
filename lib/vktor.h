@@ -36,17 +36,18 @@
  * vktor_parser#token_type is set to one of these values
  */
 typedef enum {
-	VKTOR_TOKEN_NONE,
-	VKTOR_TOKEN_NULL,
-	VKTOR_TOKEN_BOOL,
-	VKTOR_TOKEN_INT,
-	VKTOR_TOKEN_FLOAT,
-	VKTOR_TOKEN_STRING,
-	VKTOR_TOKEN_ARRAY_START,
-	VKTOR_TOKEN_ARRAY_END,
-	VKTOR_TOKEN_MAP_START,
-	VKTOR_TOKEN_MAP_KEY,
-	VKTOR_TOKEN_MAP_END
+	VKTOR_TOKEN_NONE        =  0,
+	VKTOR_TOKEN_NULL        =  1,
+	VKTOR_TOKEN_BOOL        =  1 << 1,
+	VKTOR_TOKEN_INT         =  1 << 2,
+	VKTOR_TOKEN_FLOAT       =  1 << 3,
+	VKTOR_TOKEN_STRING      =  1 << 4,
+	VKTOR_TOKEN_ARRAY_START =  1 << 5,
+	VKTOR_TOKEN_ARRAY_END   =  1 << 6,
+	VKTOR_TOKEN_MAP_START   =  1 << 7,
+	VKTOR_TOKEN_MAP_KEY     =  1 << 8,
+	VKTOR_TOKEN_MAP_END     =  1 << 9,
+	VKTOR_TOKEN_COMMA       =  1 << 10
 } vktor_token;
 
 /**
@@ -65,7 +66,9 @@ typedef enum {
 typedef enum {
 	VKTOR_ERR_OUT_OF_MEMORY,    /**< can't allocate memory */
 	VKTOR_ERR_UNEXPECTED_INPUT, /**< unexpected characters in input buffer */
-	VKTOR_ERR_INCOMPLETE_DATA   /**< can't finish parsing without more data */
+	VKTOR_ERR_INCOMPLETE_DATA,  /**< can't finish parsing without more data */
+	VKTOR_ERR_MAX_NEST,         /**< maximal nesting level reached */
+	VKTOR_ERR_INTERNAL_ERR      /**< internal parser error */
 } vktor_errcode;
 
 /**
@@ -101,11 +104,16 @@ typedef struct _vktor_buffer_struct {
  * stream. 
  */
 typedef struct _vktor_parser_struct {
-	vktor_buffer   *buffer;      /**< the current buffer being parsed */
-	vktor_buffer   *last_buffer; /**< a pointer to the last buffer */ 
-	vktor_token     token_type;  /**< current token type */
-	void           *token_value; /**< current token value, if any */
-	unsigned long   level;       /**< current nesting level */
+	vktor_buffer   *buffer;       /**< the current buffer being parsed */
+	vktor_buffer   *last_buffer;  /**< a pointer to the last buffer */ 
+	vktor_token     token_type;   /**< current token type */
+	void           *token_value;  /**< current token value, if any */
+	int             token_size;   /**< current token value length, if any */
+	char            token_resume; /**< current token is only half read */        
+	int             expected_t;   /**< bitmask of possible expected tokens */
+	char           *nest_stack;   /**< array containing current nesting stack */
+	int             nest_ptr;     /**< pointer to the current nesting level */
+	int             max_nest;     /**< maximal nesting level */
 	// Some configuration options?
 } vktor_parser;
 
@@ -117,9 +125,11 @@ typedef struct _vktor_parser_struct {
  * Initialize and return a new parser struct. Will return NULL if memory can't 
  * be allocated.
  * 
+ * @param [in] max_nest maximal nesting level
+ * 
  * @return a newly allocated parser
  */
-vktor_parser* vktor_parser_init();
+vktor_parser* vktor_parser_init(int max_nest);
 
 /**
  * @brief Free a parser and any associated memory
