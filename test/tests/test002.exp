@@ -50,8 +50,8 @@
       "servlet-name": "cofaxEmail"
       "servlet-class": "org.cofax.cds.EmailServlet"
       "init-param": 
-        "mailHost": "mail1", 
-	"mailHostOverride": "mail2"
+        "mailHost": "mail1"
+        "mailHostOverride": "mail2"
     - 
       "servlet-name": "cofaxAdmin"
       "servlet-class": "org.cofax.cds.AdminServlet"

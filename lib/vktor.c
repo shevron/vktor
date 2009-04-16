@@ -645,7 +645,7 @@ parser_read_expectedstr(vktor_parser *parser, const char *expect, int explen,
 	vktor_error **error)
 {
 	char  c;
-	int   ptr;
+	//~ int   ptr;
 	
 	assert(parser != NULL);
 	assert(expect != NULL);
@@ -653,13 +653,11 @@ parser_read_expectedstr(vktor_parser *parser, const char *expect, int explen,
 	// Expected string should be "null", "true" or "false"
 	assert(explen > 3 && explen < 6);
 	
-	if (parser->token_resume) {
-		ptr = parser->token_size;
-	} else {
-		ptr = 0;
+	if (! parser->token_resume) {
+		parser->token_size = 0;
 	}
 	
-	for (; ptr < explen; ptr++) {
+	for (; parser->token_size < explen; parser->token_size++) {
 		if (parser->buffer == NULL) {
 			parser->token_resume = 1;
 			return VKTOR_MORE_DATA;
@@ -674,7 +672,7 @@ parser_read_expectedstr(vktor_parser *parser, const char *expect, int explen,
 		}
 		
 		c = parser->buffer->text[parser->buffer->ptr];
-		if (expect[ptr] != c) {
+		if (expect[parser->token_size] != c) {
 			vktor_error_set_unexpected_c(error, c);
 			return VKTOR_ERROR;
 		}
@@ -978,6 +976,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 		
 		// Do we need to continue reading the previous token?
 		if (parser->token_resume) {
+						
 		    switch (parser->token_type) {
 		    	case VKTOR_T_MAP_KEY:
 		    		return parser_read_objkey_token(parser, error);
