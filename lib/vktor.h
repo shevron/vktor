@@ -36,20 +36,23 @@
  * vktor_parser#token_type is set to one of these values
  */
 typedef enum {
-	VKTOR_TOKEN_NONE        =  0,
-	VKTOR_TOKEN_NULL        =  1,
-	VKTOR_TOKEN_FALSE       =  1 << 1,
-	VKTOR_TOKEN_TRUE        =  1 << 2,
-	VKTOR_TOKEN_INT         =  1 << 3,
-	VKTOR_TOKEN_FLOAT       =  1 << 4,
-	VKTOR_TOKEN_STRING      =  1 << 5,
-	VKTOR_TOKEN_ARRAY_START =  1 << 6,
-	VKTOR_TOKEN_ARRAY_END   =  1 << 7,
-	VKTOR_TOKEN_MAP_START   =  1 << 8,
-	VKTOR_TOKEN_MAP_KEY     =  1 << 9,
-	VKTOR_TOKEN_MAP_END     =  1 << 10,
-	VKTOR_TOKEN_COMMA       =  1 << 11,
-	VKTOR_TOKEN_COLON       =  1 << 12
+	VKTOR_T_NONE        =  0,
+	VKTOR_T_NULL        =  1,
+	VKTOR_T_FALSE       =  1 << 1,
+	VKTOR_T_TRUE        =  1 << 2,
+	VKTOR_T_INT         =  1 << 3,
+	VKTOR_T_FLOAT       =  1 << 4,
+	VKTOR_T_STRING      =  1 << 5,
+	VKTOR_T_ARRAY_START =  1 << 6,
+	VKTOR_T_ARRAY_END   =  1 << 7,
+	VKTOR_T_MAP_START   =  1 << 8,
+	VKTOR_T_MAP_KEY     =  1 << 9,
+	VKTOR_T_MAP_END     =  1 << 10,
+	//~ VKTOR_T_COMMA       =  1 << 11,
+	//~ VKTOR_T_COLON       =  1 << 12,
+	//~ VKTOR_T_DOT         =  1 << 13,
+	//~ VKTOR_T_PLUSMINUS   =  1 << 14,
+	//~ VKTOR_T_EXP         =  1 << 15
 } vktor_token;
 
 /**
@@ -122,7 +125,7 @@ typedef struct _vktor_parser_struct {
 	void            *token_value;  /**< current token value, if any */
 	int              token_size;   /**< current token value length, if any */
 	char             token_resume; /**< current token is only half read */        
-	int              expected_t;   /**< bitmask of possible expected tokens */
+	long             expected;     /**< bitmask of possible expected tokens */
 	vktor_container *nest_stack;   /**< array holding current nesting stack */
 	int              nest_ptr;     /**< pointer to the current nesting level */
 	int              max_nest;     /**< maximal nesting level */

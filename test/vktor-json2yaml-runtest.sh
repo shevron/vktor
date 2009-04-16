@@ -96,7 +96,7 @@ if [[ $? -ne 0 ]]; then
 fi
 
 # Clean up
-rm -f "$OUTDIR/$TESTNAME*.out" "$OUTDIR/$TESTNAME.diff" > /dev/null 2>&1
+rm -f $OUTDIR/$TESTNAME*.out ./$OUTDIR/$TESTNAME.diff 
 
 # All is ok
 exit 0

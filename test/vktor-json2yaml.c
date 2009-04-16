@@ -81,7 +81,7 @@ handle_token(vktor_token type, void * value, int size, vktor_container nest)
 	assert(indent >= 0);
 	
 	switch(type) {
-		case VKTOR_TOKEN_ARRAY_START:
+		case VKTOR_T_ARRAY_START:
 			if (! is_root) {
 				print_array_indent_dash(INDENT_STR);
 				printf("\n");
@@ -91,7 +91,7 @@ handle_token(vktor_token type, void * value, int size, vktor_container nest)
 			}
 			break;
 			
-		case VKTOR_TOKEN_MAP_START:
+		case VKTOR_T_MAP_START:
 			if (! is_root) {
 				print_array_indent_dash(INDENT_STR);
 				printf("\n");
@@ -102,39 +102,48 @@ handle_token(vktor_token type, void * value, int size, vktor_container nest)
 			
 			break;
 		
-		case VKTOR_TOKEN_MAP_KEY:
+		case VKTOR_T_MAP_KEY:
 			print_indent(INDENT_STR);
 			str = copy_string((char *) value, size);
 			printf("\"%s\": ", str);
 			free(str);
 			break;
 		
-		case VKTOR_TOKEN_STRING:
+		case VKTOR_T_STRING:
 			str = copy_string((char *) value, size);
 			print_array_indent_dash(INDENT_STR);
 			printf("\"%s\"\n", str);
 			free(str);
 			break;
 			
-		case VKTOR_TOKEN_ARRAY_END:
+		// For now print numbers as strings
+		case VKTOR_T_INT:
+		case VKTOR_T_FLOAT:
+			str = copy_string((char *) value, size);
+			print_array_indent_dash(INDENT_STR);
+			printf("%s\n", str);
+			free(str);
+			break;
+			
+		case VKTOR_T_ARRAY_END:
 			indent--;
 			break;
 		
-		case VKTOR_TOKEN_MAP_END:
+		case VKTOR_T_MAP_END:
 			indent--;
 			break;
 		
-		case VKTOR_TOKEN_NULL:
+		case VKTOR_T_NULL:
 			print_array_indent_dash(INDENT_STR);
 			printf("null\n");
 			break;
 		
-		case VKTOR_TOKEN_TRUE:
+		case VKTOR_T_TRUE:
 			print_array_indent_dash(INDENT_STR);
 			printf("true\n");
 			break;
 		
-		case VKTOR_TOKEN_FALSE:
+		case VKTOR_T_FALSE:
 			print_array_indent_dash(INDENT_STR);
 			printf("false\n");
 			break;
