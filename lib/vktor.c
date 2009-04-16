@@ -1338,7 +1338,47 @@ vktor_get_value_long(vktor_parser *parser, vktor_error **error)
 	val = strtol((char *) parser->token_value, NULL, 10);
 	if (errno == ERANGE) {
 		vktor_error_set(error, VKTOR_ERR_OUT_OF_RANGE,
-			"integer value is overflows maximal long value");
+			"integer value overflows maximal long value");
+		return 0;
+	}
+	
+	return val;
+}
+
+/**
+ * @brief Get the token value as a double
+ * 
+ * Get the value of the current token as a double precision floating point 
+ * number. Suitable for reading the value of VKTOR_T_FLOAT tokens.
+ * 
+ * If the value of a number token is larger than the system's HUGE_VAL 0 is 
+ * returned and #error will indicate overflow. In such cases, 
+ * vktor_get_value_string() should be used to get the value as a string.
+ * 
+ * @param [in]  parser Parser object
+ * @param [out] error  Error object pointer pointer or null
+ * 
+ * @return The numeric value of the current token as a double 
+ * @retval 0 in case of error (although 0 might also be normal, so check the 
+ *         value of #error)
+ */
+double 
+vktor_get_value_double(vktor_parser *parser, vktor_error **error)
+{
+	double val;
+	
+	assert(parser != NULL);
+	
+	if (parser->token_value == NULL) {
+		vktor_error_set(error, VKTOR_ERR_NO_VALUE, "token value is unknown");
+		return 0;
+	}
+	
+	errno = 0;
+	val = strtod((char *) parser->token_value, NULL);
+	if (errno == ERANGE) {
+		vktor_error_set(error, VKTOR_ERR_OUT_OF_RANGE,
+			"number value overflows maximal double value");
 		return 0;
 	}
 	

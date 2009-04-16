@@ -63,9 +63,10 @@ int is_root     = 1;
 static int
 handle_token(vktor_parser *parser, vktor_container nest, vktor_error **error)
 {
-	char            *str;
-	long             num;
-	int              i;
+	char   *str;
+	long    num;
+	int     i;
+	double  dbl;
 	
 	assert(indent >= 0);
 	
@@ -125,13 +126,13 @@ handle_token(vktor_parser *parser, vktor_container nest, vktor_error **error)
 			break;
 			
 		case VKTOR_T_FLOAT:
-			vktor_get_value_str(parser, &str, error);
+			dbl = vktor_get_value_double(parser, error);
 			if (*error != NULL) {
 				return 0;
 			}
 			
 			print_array_indent_dash(INDENT_STR);
-			printf("%s\n", str);
+			printf("%.5f\n", dbl);
 			break;
 			
 		case VKTOR_T_ARRAY_END:

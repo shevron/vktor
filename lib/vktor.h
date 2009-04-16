@@ -259,6 +259,25 @@ vktor_container vktor_get_current_container(vktor_parser *parser);
 long vktor_get_value_long(vktor_parser *parser, vktor_error **error);
 
 /**
+ * @brief Get the token value as a double
+ * 
+ * Get the value of the current token as a double precision floating point 
+ * number. Suitable for reading the value of VKTOR_T_FLOAT tokens.
+ * 
+ * If the value of a number token is larger than the system's HUGE_VAL 0 is 
+ * returned and #error will indicate overflow. In such cases, 
+ * vktor_get_value_string() should be used to get the value as a string.
+ * 
+ * @param [in]  parser Parser object
+ * @param [out] error  Error object pointer pointer or null
+ * 
+ * @return The numeric value of the current token as a double 
+ * @retval 0 in case of error (although 0 might also be normal, so check the 
+ *         value of #error)
+ */
+double vktor_get_value_double(vktor_parser *parser, vktor_error **error);
+
+/**
  * @brief Get the value of the token as a string
  * 
  * Get the value of the current token as a string, as well as the length of the
