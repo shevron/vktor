@@ -40,6 +40,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
+#include <errno.h>
 #include <assert.h>
 
 /**
@@ -116,7 +118,7 @@
  * reading a token
  */
 #define check_reallocate_token_memory(cs)                               \
-	if (ptr >= maxlen) {                                                \
+	if ((ptr + 1) >= maxlen) {                                          \
 		maxlen = maxlen + cs;                                           \
 		if ((token = realloc(token, maxlen * sizeof(char))) == NULL) {  \
 			vktor_error_set(error, VKTOR_ERR_OUT_OF_MEMORY,             \
@@ -559,6 +561,7 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 		parser->token_resume = 1;
 		return VKTOR_MORE_DATA;
 	} else {
+		token[ptr] = '\0';
 		parser->token_resume = 0;
 		return VKTOR_OK;
 	}
@@ -1282,4 +1285,129 @@ vktor_get_current_container(vktor_parser *parser)
 {
 	assert(parser != NULL);
 	return parser->nest_stack[parser->nest_ptr];
+}
+
+/**
+ * @brief Get the current token type
+ * 
+ * Get the type of the current token pointed to by the parser
+ * 
+ * @param [in] parser Parser object
+ * 
+ * @return Token type (one of the VKTOR_T_* tokens)
+ */
+vktor_token
+vktor_get_token_type(vktor_parser *parser)
+{
+	assert(parser != NULL);
+	return parser->token_type;	
+}
+
+/**
+ * @brief Get the token value as a long integer
+ * 
+ * Get the value of the current token as a long integer. Suitable for reading
+ * the value of VKTOR_T_INT tokens, but can also be used to get the integer 
+ * value of VKTOR_T_FLOAT tokens and even any numeric prefix of a VKTOR_T_STRING
+ * token. 
+ * 
+ * If the value of a number token is larger than the system's maximal long, 
+ * 0 is returned and #error will indicate overflow. In such cases, 
+ * vktor_get_value_string() should be used to get the value as a string.
+ * 
+ * @param [in]  parser Parser object
+ * @param [out] error  Error object pointer pointer or null
+ * 
+ * @return The numeric value of the current token as a long int, 
+ * @retval 0 in case of error (although 0 might also be normal, so check the 
+ *         value of #error)
+ */
+long 
+vktor_get_value_long(vktor_parser *parser, vktor_error **error)
+{
+	long val;
+	
+	assert(parser != NULL);
+	
+	if (parser->token_value == NULL) {
+		vktor_error_set(error, VKTOR_ERR_NO_VALUE, "token value is unknown");
+		return 0;
+	}
+	
+	errno = 0;
+	val = strtol((char *) parser->token_value, NULL, 10);
+	if (errno == ERANGE) {
+		vktor_error_set(error, VKTOR_ERR_OUT_OF_RANGE,
+			"integer value is overflows maximal long value");
+		return 0;
+	}
+	
+	return val;
+}
+
+/**
+ * @brief Get the value of the token as a string
+ * 
+ * Get the value of the current token as a string, as well as the length of the
+ * token. Suitable for getting the value of a VKTOR_T_STRING token, but also 
+ * for reading numeric values as a string. 
+ * 
+ * Note that the string pointer populated into #val is owned by the parser and 
+ * should not be freed by the user.
+ * 
+ * @param [in]  parser Parser object
+ * @param [out] val    Pointer-pointer to be populated with the value
+ * @param [out] error  Error object pointer pointer or NULL
+ * 
+ * @return The length of the string
+ * @retval 0 in case of error (although 0 might also be normal, so check the 
+ *         value of #error)
+ */
+int
+vktor_get_value_str(vktor_parser *parser, char **val, vktor_error **error)
+{
+	assert(parser != NULL);
+	
+	if (parser->token_value == NULL) {
+		vktor_error_set(error, VKTOR_ERR_NO_VALUE, "token value is unknown");
+		return -1;
+	}
+	
+	*val = (char *) parser->token_value;
+	return parser->token_size;
+}
+
+/**
+ * @brief Get the value of the token as a string
+ * 
+ * Similar to vktor_get_value_str(), only this function will provide a copy of 
+ * the string, which will need to be freed by the user when it is no longer 
+ * used. 
+ * 
+ * @param [in]  parser Parser object
+ * @param [out] val    Pointer-pointer to be populated with the value
+ * @param [out] error  Error object pointer pointer or NULL
+ * 
+ * @return The length of the string
+ * @retval 0 in case of error (although 0 might also be normal, so check the 
+ *         value of #error)
+ */
+int 
+vktor_get_value_str_copy(vktor_parser *parser, char **val, vktor_error **error)
+{
+	char *str;
+	
+	assert(parser != NULL);
+	
+	if (parser->token_value == NULL) {
+		vktor_error_set(error, VKTOR_ERR_NO_VALUE, "token value is unknown");
+		return 0;
+	}
+	
+	str = malloc(sizeof(char) * (parser->token_size + 1));
+	str = memcpy(str, parser->token_value, parser->token_size);
+	str[parser->token_size] = '\0';
+	
+	*val = str;
+	return parser->token_size;
 }

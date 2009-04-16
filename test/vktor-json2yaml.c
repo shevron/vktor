@@ -60,27 +60,18 @@
 int indent      = 0;
 int is_root     = 1;
 
-static char*
-copy_string(char *src, int src_len)
+static int
+handle_token(vktor_parser *parser, vktor_container nest, vktor_error **error)
 {
-	char *dest;
-	
-	dest = malloc(sizeof(char) * (src_len + 1));
-	dest = memcpy(dest, src, src_len);
-	dest[src_len] = '\0';
-	
-	return dest;	
-}
-
-static void
-handle_token(vktor_token type, void * value, int size, vktor_container nest) 
-{
-	char *str;
-	int   i;
+	char            *str;
+	long             num;
+	int              i;
 	
 	assert(indent >= 0);
 	
-	switch(type) {
+	*error = NULL;
+	
+	switch(vktor_get_token_type(parser)) {
 		case VKTOR_T_ARRAY_START:
 			if (! is_root) {
 				print_array_indent_dash(INDENT_STR);
@@ -104,25 +95,43 @@ handle_token(vktor_token type, void * value, int size, vktor_container nest)
 		
 		case VKTOR_T_MAP_KEY:
 			print_indent(INDENT_STR);
-			str = copy_string((char *) value, size);
+			vktor_get_value_str(parser, &str, error);
+			if (*error != NULL) {
+				return 0;
+			}
+			
 			printf("\"%s\": ", str);
-			free(str);
 			break;
 		
 		case VKTOR_T_STRING:
-			str = copy_string((char *) value, size);
 			print_array_indent_dash(INDENT_STR);
+			vktor_get_value_str(parser, &str, error);
+			if (*error != NULL) {
+				return 0;
+			}
+			
 			printf("\"%s\"\n", str);
-			free(str);
+			break;
+		
+		// For now print numbers as strings	
+		case VKTOR_T_INT:
+			num = vktor_get_value_long(parser, error);
+			if (*error != NULL) {
+				return 0;
+			}
+			
+			print_array_indent_dash(INDENT_STR);
+			printf("%ld\n", num);
 			break;
 			
-		// For now print numbers as strings
-		case VKTOR_T_INT:
 		case VKTOR_T_FLOAT:
-			str = copy_string((char *) value, size);
+			vktor_get_value_str(parser, &str, error);
+			if (*error != NULL) {
+				return 0;
+			}
+			
 			print_array_indent_dash(INDENT_STR);
 			printf("%s\n", str);
-			free(str);
 			break;
 			
 		case VKTOR_T_ARRAY_END:
@@ -153,6 +162,8 @@ handle_token(vktor_token type, void * value, int size, vktor_container nest)
 			printf("***VKTOR UNHANDLED TOKEN***\n");
 			break;
 	}
+	
+	return 1;
 }
 
 int 
@@ -176,14 +187,22 @@ main(int argc, char *argv[])
 			
 			case VKTOR_OK:
 				// Print the token
-				handle_token(parser->token_type, parser->token_value,
-					parser->token_size, nest);
+				if (! handle_token(parser, nest, &error)) {
+					fprintf(stderr, "Paser error [%d]: %s\n", error->code, 
+						error->message);
+					ret = error->code;
+					done = 1;
+				}
 				break;
 				
 			case VKTOR_COMPLETE: 
 				// Print the token
-				handle_token(parser->token_type, parser->token_value, 
-					parser->token_size, nest);
+				if (! handle_token(parser, nest, &error)) {
+					fprintf(stderr, "Paser error [%d]: %s\n", error->code, 
+						error->message);
+					ret = error->code;
+				}
+				
 				done = 1;
 				break;
 				

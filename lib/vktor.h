@@ -48,11 +48,6 @@ typedef enum {
 	VKTOR_T_MAP_START   =  1 << 8,
 	VKTOR_T_MAP_KEY     =  1 << 9,
 	VKTOR_T_MAP_END     =  1 << 10,
-	//~ VKTOR_T_COMMA       =  1 << 11,
-	//~ VKTOR_T_COLON       =  1 << 12,
-	//~ VKTOR_T_DOT         =  1 << 13,
-	//~ VKTOR_T_PLUSMINUS   =  1 << 14,
-	//~ VKTOR_T_EXP         =  1 << 15
 } vktor_token;
 
 /**
@@ -82,6 +77,8 @@ typedef enum {
 	VKTOR_ERR_OUT_OF_MEMORY,    /**< can't allocate memory */
 	VKTOR_ERR_UNEXPECTED_INPUT, /**< unexpected characters in input buffer */
 	VKTOR_ERR_INCOMPLETE_DATA,  /**< can't finish parsing without more data */
+	VKTOR_ERR_NO_VALUE,         /**< trying to read non-existing value */
+	VKTOR_ERR_OUT_OF_RANGE,     /**< long or double value is out of range */
 	VKTOR_ERR_MAX_NEST,         /**< maximal nesting level reached */
 	VKTOR_ERR_INTERNAL_ERR      /**< internal parser error */
 } vktor_errcode;
@@ -204,6 +201,17 @@ vktor_status vktor_read_buffer(vktor_parser *parser, char *text, long text_len,
 vktor_status vktor_parse(vktor_parser *parser, vktor_error **error);
 		  
 /**
+ * @brief Get the current token type
+ * 
+ * Get the type of the current token pointed to by the parser
+ * 
+ * @param [in] parser Parser object
+ * 
+ * @return Token type (one of the VKTOR_T_* tokens)
+ */
+vktor_token vktor_get_token_type(vktor_parser *parser);
+
+/**
  * @brief Get the current nesting depth
  * 
  * Get the current array/object nesting depth of the current token the parser
@@ -227,6 +235,67 @@ int vktor_get_depth(vktor_parser *parser);
  *   level
  */
 vktor_container vktor_get_current_container(vktor_parser *parser);
+
+/**
+ * @brief Get the token value as a long integer
+ * 
+ * Get the value of the current token as a long integer. Suitable for reading
+ * the value of VKTOR_T_INT tokens, but can also be used to get the integer 
+ * value of VKTOR_T_FLOAT tokens and even any numeric prefix of a VKTOR_T_STRING
+ * token. 
+ * 
+ * Uses atol() internally. 
+ * 
+ * If the value of a number token is larger than the system's maximal long, 
+ * the error code will indicate overflow and vktor_get_value_string() should be
+ * used instead.
+ * 
+ * @param [in]  parser Parser object
+ * @param [out] error  Error object pointer pointer or null
+ * 
+ * @return The numeric value of the current token as a long int, or 0 in case 
+ *         of error
+ */
+long vktor_get_value_long(vktor_parser *parser, vktor_error **error);
+
+/**
+ * @brief Get the value of the token as a string
+ * 
+ * Get the value of the current token as a string, as well as the length of the
+ * token. Suitable for getting the value of a VKTOR_T_STRING token, but also 
+ * for reading numeric values as a string. 
+ * 
+ * Note that the string pointer populated into #val is owned by the parser and 
+ * should not be freed by the user.
+ * 
+ * @param [in]  parser Parser object
+ * @param [out] val    Pointer-pointer to be populated with the value
+ * @param [out] error  Error object pointer pointer or NULL
+ * 
+ * @return The length of the string
+ * @retval 0 in case of error (although 0 might also be normal, so check the 
+ *         value of #error)
+ */
+int vktor_get_value_str(vktor_parser *parser, char **val, vktor_error **error);
+
+/**
+ * @brief Get the value of the token as a string
+ * 
+ * Similar to vktor_get_value_str(), only this function will provide a copy of 
+ * the string, which will need to be freed by the user when it is no longer 
+ * used. 
+ * 
+ * @param [in]  parser Parser object
+ * @param [out] val    Pointer-pointer to be populated with the value
+ * @param [out] error  Error object pointer pointer or NULL
+ * 
+ * @return The length of the string
+ * @retval 0 in case of error (although 0 might also be normal, so check the 
+ *         value of #error)
+ */
+int vktor_get_value_str_copy(vktor_parser *parser, char **val, vktor_error **error);
+
+
 
 #define _VKTOR_H
 #endif /* VKTOR_H */
