@@ -31,10 +31,21 @@
  * A simple JSON to (kind of) YAML converter based on libvktor, used here for 
  * testing purposes.
  * 
- * Please note that this tool is not guaranteed to produce valid YAML output - 
+ * This program reads a JSON stream from standard input, and writes the same
+ * data back in YAML-like format to standard output. 
+ * 
+ * If the BUFFSIZE environment variable is set, it defines the read buffer size
+ * for reading from STDIN (the default value is 64 bytes - this is very small
+ * but is intentional for testing purposes)
+ * 
+ * Please note that this tool is not meant to produce valid YAML output - 
  * the purpose is only to generate some consistent output which could be used
  * to test the JSON parser. This is not meant to be a good example of a YAML 
  * writer.
+ * 
+ * The return code of the program should be 0 if all is ok. Otherwise, one of
+ * the VKTOR_ERR codes as returned from the parser is returned in case of a 
+ * parser error. 255 is retuned in case of an error unrelated to the parser.
  * 
  * You can use the code here as an example of how to write a simple JSON parser
  * using libvktor.
@@ -46,7 +57,7 @@
 #include <assert.h>
 #include <vktor.h>
 
-#define MAX_BUFFSIZE 64
+#define DEFAULT_BUFFSIZE 64
 #define INDENT_STR "  "
 
 #define print_indent(s) for (i = 0; i < indent; i++) { printf(s);	}
@@ -57,8 +68,8 @@
 		printf("- ");                    \
 	}
 
-int indent      = 0;
-int is_root     = 1;
+int indent  = 0;
+int is_root = 1;
 
 static int
 handle_token(vktor_parser *parser, vktor_container nest, vktor_error **error)
@@ -114,11 +125,21 @@ handle_token(vktor_parser *parser, vktor_container nest, vktor_error **error)
 			printf("\"%s\"\n", str);
 			break;
 		
-		// For now print numbers as strings	
 		case VKTOR_T_INT:
 			num = vktor_get_value_long(parser, error);
 			if (*error != NULL) {
-				return 0;
+				if ((*error)->code == VKTOR_ERR_OUT_OF_RANGE) {
+					// Out of range, get value as string
+					print_array_indent_dash(INDENT_STR);
+					vktor_get_value_str(parser, &str, error);
+					if (*error != NULL) {
+						return 0;
+					}
+					printf("%s ## AS STRING ##\n", str);
+					break;
+				} else {
+					return 0;
+				}
 			}
 			
 			print_array_indent_dash(INDENT_STR);
@@ -128,7 +149,18 @@ handle_token(vktor_parser *parser, vktor_container nest, vktor_error **error)
 		case VKTOR_T_FLOAT:
 			dbl = vktor_get_value_double(parser, error);
 			if (*error != NULL) {
-				return 0;
+				if ((*error)->code == VKTOR_ERR_OUT_OF_RANGE) {
+					// Out of range, get value as string
+					print_array_indent_dash(INDENT_STR);
+					vktor_get_value_str(parser, &str, error);
+					if (*error != NULL) {
+						return 0;
+					}
+					printf("%s ## AS STRING ##\n", str);
+					break;
+				} else {
+					return 0;
+				}
 			}
 			
 			print_array_indent_dash(INDENT_STR);
@@ -160,7 +192,8 @@ handle_token(vktor_parser *parser, vktor_container nest, vktor_error **error)
 			
 		default:  // not yet handled stuff
 			print_array_indent_dash(INDENT_STR);
-			printf("***VKTOR UNHANDLED TOKEN***\n");
+			printf("--- VKTOR UNHANDLED TOKEN: %d\n", 
+				vktor_get_token_type(parser));
 			break;
 	}
 	
@@ -168,7 +201,7 @@ handle_token(vktor_parser *parser, vktor_container nest, vktor_error **error)
 }
 
 int 
-main(int argc, char *argv[]) 
+main(int argc, char *argv[], char *envp[]) 
 {
 	vktor_parser    *parser;
 	vktor_status     status;
@@ -177,7 +210,14 @@ main(int argc, char *argv[])
 	char            *buffer;
 	size_t           read_bytes;
 	int              done = 0, ret = 0;
-		
+	char            *buffsize_c;
+	int              buffsize = DEFAULT_BUFFSIZE;
+	
+	// Set buffer size from environment, if set
+	if ((buffsize_c = getenv("BUFFSIZE")) != NULL) {
+		buffsize = atoi(buffsize_c);
+	}
+	
 	parser = vktor_parser_init(128);
 	
 	do {
@@ -196,14 +236,23 @@ main(int argc, char *argv[])
 				}
 				break;
 				
-			case VKTOR_COMPLETE: 
-				// Print the token
-				if (! handle_token(parser, nest, &error)) {
-					fprintf(stderr, "Paser error [%d]: %s\n", error->code, 
-						error->message);
-					ret = error->code;
+			case VKTOR_MORE_DATA:
+				// We need to read more data
+				buffer = malloc(sizeof(char) * buffsize);
+				read_bytes = fread(buffer, sizeof(char), buffsize, stdin);
+				if (read_bytes) {
+					vktor_read_buffer(parser, buffer, read_bytes, &error);
+					
+				} else {
+					// Nothing left to read
+					done = 1;
+					ret = 255;
+					fprintf(stderr, "Error: premature end of stream\n");
 				}
+				break;
 				
+			case VKTOR_COMPLETE: 
+				// Parser says we are done
 				done = 1;
 				break;
 				
@@ -213,21 +262,6 @@ main(int argc, char *argv[])
 					error->message);
 				ret = error->code;
 				done = 1;
-				break;
-				
-			case VKTOR_MORE_DATA:
-				// We need to read more data
-				buffer = malloc(sizeof(char) * MAX_BUFFSIZE);
-				read_bytes = fread(buffer, sizeof(char), MAX_BUFFSIZE, stdin);
-				if (read_bytes) {
-					vktor_read_buffer(parser, buffer, read_bytes, &error);
-					
-				} else {
-					// Nothing left to read
-					done = 1;
-					ret = -1;
-					fprintf(stderr, "Error: premature end of stream\n");
-				}
 				break;
 		}
 		

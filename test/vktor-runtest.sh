@@ -100,7 +100,7 @@ RETVAL=$?
 # check return value
 if test $SKIP_RETVAL -eq 0; then
 	if test $TEST_RETVAL -ne $RETVAL; then
-		echo "FAIL: retun value ($RETVAL) is not as expected ($TEST_RETVAL)" >&2
+		echo "$TEST_NAME FAIL: retun value ($RETVAL) is not as expected ($TEST_RETVAL)" >&2
 		exit 1
 	fi
 fi
@@ -109,8 +109,8 @@ fi
 if test $SKIP_STDOUT -eq 0; then
 	echo "$TEST_STDOUT" | $DIFF -u - $OUTDIR/$TEST_NAME.stdout > $OUTDIR/$TEST_NAME.stdout.diff
 	if test $? -ne 0; then
-		echo "FAIL: standard output does not match expected" >&2
-		echo "      see $TEST_NAME.stdout.diff for details" >&2
+		echo "$TEST_NAME FAIL: standard output does not match expected" >&2
+		echo "    see $TEST_NAME.stdout.diff for details" >&2
 		exit 1
 	fi
 fi
@@ -119,8 +119,8 @@ fi
 if test $SKIP_STDERR -eq 0; then
 	echo "$TEST_STDERR" | $DIFF -u - $OUTDIR/$TEST_NAME.stderr > $OUTDIR/$TEST_NAME.stderr.diff
 	if test $? -ne 0; then
-		echo "FAIL: standard error does not match expected" >&2
-		echo "      see $TEST_NAME.stderr.diff for details" >&2
+		echo "$TEST_NAME FAIL: standard error does not match expected" >&2
+		echo "    see $TEST_NAME.stderr.diff for details" >&2
 		exit 1
 	fi
 fi

@@ -1095,7 +1095,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					
 				case '"':
 					if (! parser->expected & (VKTOR_T_STRING | 
-					                            VKTOR_T_MAP_KEY)) {
+					                          VKTOR_T_MAP_KEY)) {
 						vktor_error_set_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
@@ -1278,13 +1278,15 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 		parser_advance_buffer(parser);	
 	}
 	
-	if (parser->buffer == NULL) {
-		return VKTOR_MORE_DATA;
+	assert(parser->nest_ptr >= 0);
+	
+	if (parser->buffer != NULL) {
+		return VKTOR_OK;
 	} else {
-		if (parser->nest_ptr == 0) {
+		if (parser->nest_ptr == 0 && parser->token_type != VKTOR_T_NONE) {
 			return VKTOR_COMPLETE;
 		} else {
-			return VKTOR_OK;
+			return VKTOR_MORE_DATA;
 		}
 	}
 }
