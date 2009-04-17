@@ -571,6 +571,7 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 				switch (c) {
 					case '"':
 					case '\\':
+					case '/':
 						token[ptr++] = c;
 						check_reallocate_token_memory(VKTOR_STR_MEMCHUNK);
 						break;
