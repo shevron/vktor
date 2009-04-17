@@ -94,40 +94,10 @@ typedef struct _vktor_error_struct {
 } vktor_error;
 
 /**
- * Buffer struct, containing some text to parse along with an internal pointer
- * and a link to the next buffer.
- * 
- * vktor internally holds text to be parsed as a linked list of buffers pushed
- * by the user, so no memory reallocations are required. Whenever a buffer is 
- * completely parsed, the parser will advance to the next buffer pointed by 
- * #next_buff and will free the previous buffer
- * 
- * This is done internally by the parser
- */
-typedef struct _vktor_buffer_struct {
-	char                        *text;      /**< buffer text */
-	long                         size;      /**< buffer size */
-	long                         ptr;       /**< internal buffer position */
-	struct _vktor_buffer_struct *next_buff;	/**< pointer to the next buffer */
-} vktor_buffer;
-
-/**
  * Parser struct - this is the main object used by the user to parse a JSON 
  * stream. 
  */
-typedef struct _vktor_parser_struct {
-	vktor_buffer    *buffer;       /**< the current buffer being parsed */
-	vktor_buffer    *last_buffer;  /**< a pointer to the last buffer */ 
-	vktor_token      token_type;   /**< current token type */
-	void            *token_value;  /**< current token value, if any */
-	int              token_size;   /**< current token value length, if any */
-	char             token_resume; /**< current token is only half read */        
-	long             expected;     /**< bitmask of possible expected tokens */
-	vktor_container *nest_stack;   /**< array holding current nesting stack */
-	int              nest_ptr;     /**< pointer to the current nesting level */
-	int              max_nest;     /**< maximal nesting level */
-	// Some configuration options?
-} vktor_parser;
+typedef struct _vktor_parser_struct vktor_parser;
 
 /* function prototypes */
 

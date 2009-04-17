@@ -99,17 +99,17 @@
 #define expect_next_value_token(p)                 \
 	switch(p->nest_stack[p->nest_ptr]) {           \
 		case VKTOR_CONTAINER_OBJECT:               \
-			p->expected = VKTOR_C_COMMA |    \
-							VKTOR_T_MAP_END;   \
+			p->expected = VKTOR_C_COMMA |          \
+							VKTOR_T_MAP_END;       \
 			break;                                 \
 												   \
 		case VKTOR_CONTAINER_ARRAY:                \
-			p->expected = VKTOR_C_COMMA |    \
-							VKTOR_T_ARRAY_END; \
+			p->expected = VKTOR_C_COMMA |          \
+							VKTOR_T_ARRAY_END;     \
 			break;                                 \
 												   \
 		default:                                   \
-			p->expected = VKTOR_T_NONE;      \
+			p->expected = VKTOR_T_NONE;            \
 			break;                                 \
 	}
 
@@ -127,6 +127,41 @@
 			return VKTOR_ERROR;                                         \
 		}                                                               \
 	}
+
+/**
+ * Buffer struct, containing some text to parse along with an internal pointer
+ * and a link to the next buffer.
+ * 
+ * vktor internally holds text to be parsed as a linked list of buffers pushed
+ * by the user, so no memory reallocations are required. Whenever a buffer is 
+ * completely parsed, the parser will advance to the next buffer pointed by 
+ * #next_buff and will free the previous buffer
+ * 
+ * This is done internally by the parser
+ */
+typedef struct _vktor_buffer_struct {
+	char                        *text;      /**< buffer text */
+	long                         size;      /**< buffer size */
+	long                         ptr;       /**< internal buffer position */
+	struct _vktor_buffer_struct *next_buff;	/**< pointer to the next buffer */
+} vktor_buffer;
+
+/**
+ * Parser struct - this is the main object used by the user to parse a JSON 
+ * stream. 
+ */
+struct _vktor_parser_struct {
+	vktor_buffer    *buffer;       /**< the current buffer being parsed */
+	vktor_buffer    *last_buffer;  /**< a pointer to the last buffer */ 
+	vktor_token      token_type;   /**< current token type */
+	void            *token_value;  /**< current token value, if any */
+	int              token_size;   /**< current token value length, if any */
+	char             token_resume; /**< current token is only half read */        
+	long             expected;     /**< bitmask of possible expected tokens */
+	vktor_container *nest_stack;   /**< array holding current nesting stack */
+	int              nest_ptr;     /**< pointer to the current nesting level */
+	int              max_nest;     /**< maximal nesting level */
+};
 
 /**
  * Special JSON characters - these are not returned to the user as tokens 
@@ -489,6 +524,9 @@ nest_stack_pop(vktor_parser *parser, vktor_error **error)
  * @param [out]    error  Error object pointer pointer or NULL
  * 
  * @return Status code
+ * 
+ * @todo Handle control characters and unicode 
+ * @todo Handle quoted special characters 
  */
 static vktor_status
 parser_read_string(vktor_parser *parser, vktor_error **error)
@@ -535,11 +573,9 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 					break;
 					
 				case '\\':
-					/** @todo Handle quoted special characters */
 					// Some quoted character
 					
 				default:
-					/** @todo Handle control characters and unicode */
 					token[ptr++] = c;
 					check_reallocate_token_memory(VKTOR_STR_MEMCHUNK);
 					break;
@@ -1312,7 +1348,7 @@ vktor_get_token_type(vktor_parser *parser)
  * token. 
  * 
  * If the value of a number token is larger than the system's maximal long, 
- * 0 is returned and #error will indicate overflow. In such cases, 
+ * 0 is returned and error will indicate overflow. In such cases, 
  * vktor_get_value_string() should be used to get the value as a string.
  * 
  * @param [in]  parser Parser object
@@ -1320,7 +1356,7 @@ vktor_get_token_type(vktor_parser *parser)
  * 
  * @return The numeric value of the current token as a long int, 
  * @retval 0 in case of error (although 0 might also be normal, so check the 
- *         value of #error)
+ *         value of error)
  */
 long 
 vktor_get_value_long(vktor_parser *parser, vktor_error **error)
@@ -1352,7 +1388,7 @@ vktor_get_value_long(vktor_parser *parser, vktor_error **error)
  * number. Suitable for reading the value of VKTOR_T_FLOAT tokens.
  * 
  * If the value of a number token is larger than the system's HUGE_VAL 0 is 
- * returned and #error will indicate overflow. In such cases, 
+ * returned and error will indicate overflow. In such cases, 
  * vktor_get_value_string() should be used to get the value as a string.
  * 
  * @param [in]  parser Parser object
@@ -1360,7 +1396,7 @@ vktor_get_value_long(vktor_parser *parser, vktor_error **error)
  * 
  * @return The numeric value of the current token as a double 
  * @retval 0 in case of error (although 0 might also be normal, so check the 
- *         value of #error)
+ *         value of error)
  */
 double 
 vktor_get_value_double(vktor_parser *parser, vktor_error **error)
@@ -1392,7 +1428,7 @@ vktor_get_value_double(vktor_parser *parser, vktor_error **error)
  * token. Suitable for getting the value of a VKTOR_T_STRING token, but also 
  * for reading numeric values as a string. 
  * 
- * Note that the string pointer populated into #val is owned by the parser and 
+ * Note that the string pointer populated into val is owned by the parser and 
  * should not be freed by the user.
  * 
  * @param [in]  parser Parser object
@@ -1401,7 +1437,7 @@ vktor_get_value_double(vktor_parser *parser, vktor_error **error)
  * 
  * @return The length of the string
  * @retval 0 in case of error (although 0 might also be normal, so check the 
- *         value of #error)
+ *         value of error)
  */
 int
 vktor_get_value_str(vktor_parser *parser, char **val, vktor_error **error)
@@ -1430,7 +1466,7 @@ vktor_get_value_str(vktor_parser *parser, char **val, vktor_error **error)
  * 
  * @return The length of the string
  * @retval 0 in case of error (although 0 might also be normal, so check the 
- *         value of #error)
+ *         value of error)
  */
 int 
 vktor_get_value_str_copy(vktor_parser *parser, char **val, vktor_error **error)
