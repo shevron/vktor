@@ -168,11 +168,12 @@ struct _vktor_parser_struct {
  * but still have a meaning when parsing JSON.
  */
 enum {
-	VKTOR_C_COMMA  = 1 << 16, /**< ",", used as struct separator */
-	VKTOR_C_COLON  = 1 << 17, /**< ":", used to separate object key:value */
-	VKTOR_C_DOT    = 1 << 18, /**< ".", used in floating-point numbers */ 
-	VKTOR_C_SIGNUM = 1 << 19, /**< "+" or "-" used in numbers */
-	VKTOR_C_EXP    = 1 << 20  /**< "e" or "E" used for number exponent */
+	VKTOR_C_COMMA   = 1 << 16, /**< ",", used as struct separator */
+	VKTOR_C_COLON   = 1 << 17, /**< ":", used to separate object key:value */
+	VKTOR_C_DOT     = 1 << 18, /**< ".", used in floating-point numbers */ 
+	VKTOR_C_SIGNUM  = 1 << 19, /**< "+" or "-" used in numbers */
+	VKTOR_C_EXP     = 1 << 20, /**< "e" or "E" used for number exponent */
+	VKTOR_C_ESCAPED = 1 << 21  /**< An escaped character */
 };
 
 /**
@@ -566,21 +567,87 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 		while (! eobuffer(parser->buffer)) {
 			c = parser->buffer->text[parser->buffer->ptr];
 			
-			switch (c) {
-				case '"':
-					// end of string;
-					done = 1;
-					break;
+			if (parser->expected & VKTOR_C_ESCAPED) {
+				switch (c) {
+					case '"':
+					case '\\':
+						token[ptr++] = c;
+						check_reallocate_token_memory(VKTOR_STR_MEMCHUNK);
+						break;
+						
+					case 'b':
+						token[ptr++] = '\b';
+						check_reallocate_token_memory(VKTOR_STR_MEMCHUNK);
+						break;
+						
+					case 'f':
+						token[ptr++] = '\f';
+						check_reallocate_token_memory(VKTOR_STR_MEMCHUNK);
+						break;
+						
+					case 'n':
+						token[ptr++] = '\n';
+						check_reallocate_token_memory(VKTOR_STR_MEMCHUNK);
+						break;
+						
+					case 'r':
+						token[ptr++] = '\r';
+						check_reallocate_token_memory(VKTOR_STR_MEMCHUNK);
+						break;
 					
-				case '\\':
-					// Some quoted character
-					
-				default:
-					token[ptr++] = c;
-					check_reallocate_token_memory(VKTOR_STR_MEMCHUNK);
-					break;
+					case 't':
+						token[ptr++] = '\t';
+						check_reallocate_token_memory(VKTOR_STR_MEMCHUNK);
+						break;
+						
+					case 'u':
+						/**
+						 * @todo deal with a unicode sequence
+						 */
+						token[ptr++] = '\t';
+						check_reallocate_token_memory(VKTOR_STR_MEMCHUNK);
+						break;
+						
+					default:
+						// what is this?
+						// throw an error or deal as a regular character?
+						vktor_error_set_unexpected_c(error, c);
+						parser->expected = parser->expected & ~VKTOR_C_ESCAPED;
+						return VKTOR_ERROR;
+						break;
+				}
+				
+				parser->expected = parser->expected & ~VKTOR_C_ESCAPED;
+				
+			} else {			
+				switch (c) {
+					case '"':
+						// end of string;
+						done = 1;
+						break;
+						
+					case '\\':
+						// Some escaped character
+						parser->expected = parser->expected | VKTOR_C_ESCAPED;
+						break;
+						
+					default:
+						if ((c <= 0x1F) || c == 0x7F) {
+							/**
+							 * @todo This should be Unicode, not ASCII control 
+							 * charaters (maybe they are the same?
+							 */
+							// Invalid control character
+							vktor_error_set_unexpected_c(error, c);
+							return VKTOR_ERROR;
+						}
+						
+						token[ptr++] = c;
+						check_reallocate_token_memory(VKTOR_STR_MEMCHUNK);
+						break;
+				}
 			}
-			
+						
 			parser->buffer->ptr++;
 			if (done) break;
 		}
