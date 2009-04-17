@@ -1,0 +1,48 @@
+# Test a simple array with some null, true and false values
+# Shahar Evron, 2009-04-17
+
+# Test program
+TEST_PROG=vktor-json2yaml
+
+# Test input
+TEST_STDIN=$(cat <<ENDOFTEXT
+[ 
+	false, null, null, true,
+	false, null, null, true,
+	false, null, null, true,
+	false, null, null, true,
+	false, null, null, true
+]
+ENDOFTEXT
+)
+
+# Expected output
+TEST_STDOUT=$(cat <<ENDOFTEXT
+- false
+- null
+- null
+- true
+- false
+- null
+- null
+- true
+- false
+- null
+- null
+- true
+- false
+- null
+- null
+- true
+- false
+- null
+- null
+- true
+ENDOFTEXT
+)
+
+# No need to test standard error output
+SKIP_STDERR=1
+
+# Expected program return code
+TEST_RETVAL=0

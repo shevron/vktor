@@ -229,14 +229,11 @@ vktor_json2yaml_SOURCES = vktor-json2yaml.c
 AM_CFLAGS = $(VKTOR_CFLAGS)
 AM_CPPFLAGS = -I$(top_srcdir)/lib
 LDADD = $(top_srcdir)/lib/libvktor.la
-TESTS_ENVIRONMENT = OUTDIR=tests ./vktor-json2yaml-runtest.sh 
-TESTS = tests/*.json
-EXTRA_DIST = vktor-json2yaml-runtest.sh \
-             $(TESTS) \
-			 tests/*.exp
-
-CLEANFILES = tests/*.out   \
-             tests/*.diff
+OUTDIR = results
+TESTS_ENVIRONMENT = OUTDIR=$(OUTDIR) ./vktor-runtest.sh 
+TESTS = tests/*
+EXTRA_DIST = vktor-runtest.sh \
+             $(TESTS)
 
 all: all-am
 
@@ -499,7 +496,6 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
-	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -509,7 +505,7 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-checkPROGRAMS clean-generic clean-libtool \
+clean-am: clean-checkPROGRAMS clean-generic clean-libtool clean-local \
 	mostlyclean-am
 
 distclean: distclean-am
@@ -569,8 +565,8 @@ uninstall-am:
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-TESTS check-am clean \
-	clean-checkPROGRAMS clean-generic clean-libtool ctags \
-	distclean distclean-compile distclean-generic \
+	clean-checkPROGRAMS clean-generic clean-libtool clean-local \
+	ctags distclean distclean-compile distclean-generic \
 	distclean-libtool distclean-tags distdir dvi dvi-am html \
 	html-am info info-am install install-am install-data \
 	install-data-am install-dvi install-dvi-am install-exec \
@@ -582,6 +578,9 @@ uninstall-am:
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am
 
+
+clean-local:
+	rm -rf $(OUTDIR)
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

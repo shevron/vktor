@@ -36,12 +36,12 @@ AM_CPPFLAGS = -I$(top_srcdir)/lib
 
 LDADD = $(top_srcdir)/lib/libvktor.la
 
-TESTS_ENVIRONMENT = OUTDIR=tests ./vktor-json2yaml-runtest.sh 
-TESTS = tests/*.json
+OUTDIR=results
+TESTS_ENVIRONMENT = OUTDIR=$(OUTDIR) ./vktor-runtest.sh 
+TESTS = tests/*
 
-EXTRA_DIST = vktor-json2yaml-runtest.sh \
-             $(TESTS) \
-			 tests/*.exp
+EXTRA_DIST = vktor-runtest.sh \
+             $(TESTS)
 
-CLEANFILES = tests/*.out   \
-             tests/*.diff
+clean-local:
+	rm -rf $(OUTDIR)

@@ -1,0 +1,103 @@
+# Test with the examples available in http://www.json.org/example.html
+# Shahar Evron, 2009-04-17
+
+# Test program
+TEST_PROG=vktor-json2yaml
+
+# Test input
+TEST_STDIN=$(cat <<ENDOFTEXT
+{"menu": {
+    "header": "SVG Viewer",
+    "items": [
+        {"id": "Open"},
+        {"id": "OpenNew", "label": "Open New"},
+        null,
+        {"id": "ZoomIn", "label": "Zoom In"},
+        {"id": "ZoomOut", "label": "Zoom Out"},
+        {"id": "OriginalView", "label": "Original View"},
+        null,
+        {"id": "Quality"},
+        {"id": "Pause"},
+        {"id": "Mute"},
+        null,
+        {"id": "Find", "label": "Find..."},
+        {"id": "FindAgain", "label": "Find Again"},
+        {"id": "Copy"},
+        {"id": "CopyAgain", "label": "Copy Again"},
+        {"id": "CopySVG", "label": "Copy SVG"},
+        {"id": "ViewSVG", "label": "View SVG"},
+        {"id": "ViewSource", "label": "View Source"},
+        {"id": "SaveAs", "label": "Save As"},
+        null,
+        {"id": "Help"},
+        {"id": "About", "label": "About Adobe CVG Viewer..."}
+    ]
+}}
+ENDOFTEXT
+)
+
+# Expected output
+TEST_STDOUT=$(cat <<ENDOFTEXT
+"menu": 
+  "header": "SVG Viewer"
+  "items": 
+    - 
+      "id": "Open"
+    - 
+      "id": "OpenNew"
+      "label": "Open New"
+    - null
+    - 
+      "id": "ZoomIn"
+      "label": "Zoom In"
+    - 
+      "id": "ZoomOut"
+      "label": "Zoom Out"
+    - 
+      "id": "OriginalView"
+      "label": "Original View"
+    - null
+    - 
+      "id": "Quality"
+    - 
+      "id": "Pause"
+    - 
+      "id": "Mute"
+    - null
+    - 
+      "id": "Find"
+      "label": "Find..."
+    - 
+      "id": "FindAgain"
+      "label": "Find Again"
+    - 
+      "id": "Copy"
+    - 
+      "id": "CopyAgain"
+      "label": "Copy Again"
+    - 
+      "id": "CopySVG"
+      "label": "Copy SVG"
+    - 
+      "id": "ViewSVG"
+      "label": "View SVG"
+    - 
+      "id": "ViewSource"
+      "label": "View Source"
+    - 
+      "id": "SaveAs"
+      "label": "Save As"
+    - null
+    - 
+      "id": "Help"
+    - 
+      "id": "About"
+      "label": "About Adobe CVG Viewer..."
+ENDOFTEXT
+)
+
+# No need to test standard error output
+SKIP_STDERR=1
+
+# Expected program return code
+TEST_RETVAL=0

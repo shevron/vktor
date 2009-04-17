@@ -1,0 +1,29 @@
+# Test a very simple array with some valid numeric values (and one string)
+# Shahar Evron, 2009-04-17
+
+# Test program
+TEST_PROG=vktor-json2yaml
+
+# Test input
+TEST_STDIN=$(cat <<ENDOFTEXT
+[ 123523, 0.12312, -1231.5, 1235e3, 345.4E-1, 2147483647, "string" ]
+ENDOFTEXT
+)
+
+# Expected output
+TEST_STDOUT=$(cat <<ENDOFTEXT
+- 123523
+- 0.12312
+- -1231.50000
+- 1235000.00000
+- 34.54000
+- 2147483647
+- "string"
+ENDOFTEXT
+)
+
+# No need to test standard error output
+SKIP_STDERR=1
+
+# Expected program return code
+TEST_RETVAL=0
