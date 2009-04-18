@@ -687,8 +687,11 @@ parser_read_string_token(vktor_parser *parser, vktor_error **error)
 {
 	vktor_status status;
 	
+	if (! parser->token_resume) {
+		parser_set_token(parser, VKTOR_T_STRING, NULL);
+	}
+	
 	// Read string	
-	parser->token_type = VKTOR_T_STRING;
 	status = parser_read_string(parser, error);
 	
 	// Set next expected token
@@ -717,8 +720,11 @@ parser_read_objkey_token(vktor_parser *parser, vktor_error **error)
 	
 	assert(nest_stack_in(parser, VKTOR_CONTAINER_OBJECT));
 	
+	if (! parser->token_resume) {
+		parser_set_token(parser, VKTOR_T_MAP_KEY, NULL);
+	}
+	
 	// Read string	
-	parser->token_type = VKTOR_T_MAP_KEY;
 	status = parser_read_string(parser, error);
 	
 	// Set next expected token
@@ -918,8 +924,8 @@ parser_read_number_token(vktor_parser *parser, vktor_error **error)
 						   VKTOR_C_EXP | 
 						   VKTOR_C_SIGNUM;
 						   
-		// Token type is INT until proven otherwise 
-		parser->token_type = VKTOR_T_INT;
+		// Free previous token and set token type to INT until proven otherwise 
+		parser_set_token(parser, VKTOR_T_INT, NULL);
 	}
 	
 	if (token == NULL) {
@@ -1138,7 +1144,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					
 					// Expecting: map key or map end
 					parser->expected = VKTOR_T_MAP_KEY |
-					                     VKTOR_T_MAP_END;
+					                   VKTOR_T_MAP_END;
 					
 					done = 1;
 					break;
