@@ -205,7 +205,7 @@ main(int argc, char *argv[], char *envp[])
 {
 	vktor_parser    *parser;
 	vktor_status     status;
-	vktor_error     *error;
+	vktor_error     *error = NULL;
 	vktor_container  nest;
 	char            *buffer;
 	size_t           read_bytes;
@@ -229,7 +229,7 @@ main(int argc, char *argv[], char *envp[])
 			case VKTOR_OK:
 				// Print the token
 				if (! handle_token(parser, nest, &error)) {
-					fprintf(stderr, "Paser error [%d]: %s\n", error->code, 
+					fprintf(stderr, "Parser error [%d]: %s\n", error->code, 
 						error->message);
 					ret = error->code;
 					done = 1;
@@ -266,6 +266,10 @@ main(int argc, char *argv[], char *envp[])
 		}
 		
 	} while (! done);
+	
+	if (error != NULL) {
+		vktor_error_free(error);
+	}
 	
 	vktor_parser_free(parser);
 	

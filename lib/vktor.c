@@ -1046,6 +1046,7 @@ parser_read_number_token(vktor_parser *parser, vktor_error **error)
 		parser->token_resume = 1;
 		return VKTOR_MORE_DATA;
 	} else {
+		token[ptr] = '\0';
 		parser->token_resume = 0;
 		expect_next_value_token(parser);
 		return VKTOR_OK;
