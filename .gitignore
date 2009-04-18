@@ -4,3 +4,12 @@ config.h.in~
 docs/*
 autom4te.cache/*
 stamp-h
+stamp-h1
+config.h
+libtool
+*Makefile
+*/.deps/
+*/.libs/
+*.o
+*.lo
+*.la
