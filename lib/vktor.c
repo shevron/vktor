@@ -45,7 +45,7 @@
 /**
  * Maximal error string length (mostly for internal use)
  */
-#define VKTOR_ERR_STRLEN 1024
+#define VKTOR_MAX_E_LEN 256
 
 /**
  * Memory allocation chunk size used when reading strings
@@ -303,12 +303,12 @@ set_error(vktor_error **eptr, vktor_errcode code, const char *msg, ...)
 	}
 	
 	err->code = code;
-	err->message = malloc(VKTOR_ERR_STRLEN * sizeof(char));
+	err->message = malloc(VKTOR_MAX_E_LEN * sizeof(char));
 	if (err->message != NULL) {
 		va_list ap;
 		      
 		va_start(ap, msg);
-		vsnprintf(err->message, VKTOR_ERR_STRLEN, msg, ap);
+		vsnprintf(err->message, VKTOR_MAX_E_LEN, msg, ap);
 		va_end(ap);
 	}
 	
