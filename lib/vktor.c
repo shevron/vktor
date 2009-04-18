@@ -32,6 +32,12 @@
  * internal static functions, data types and macros.
  */
 
+/**
+ * @defgroup internal Internal API
+ * @internal
+ * @{
+ */
+
 #include "config.h"
 #include "vktor.h"
 
@@ -162,53 +168,19 @@ struct _vktor_parser_struct {
 };
 
 /**
+ * @enum vktor_specialchar
+ * 
  * Special JSON characters - these are not returned to the user as tokens 
  * but still have a meaning when parsing JSON.
  */
-enum {
+typedef enum {
 	VKTOR_C_COMMA   = 1 << 16, /**< ",", used as struct separator */
 	VKTOR_C_COLON   = 1 << 17, /**< ":", used to separate object key:value */
 	VKTOR_C_DOT     = 1 << 18, /**< ".", used in floating-point numbers */ 
 	VKTOR_C_SIGNUM  = 1 << 19, /**< "+" or "-" used in numbers */
 	VKTOR_C_EXP     = 1 << 20, /**< "e" or "E" used for number exponent */
 	VKTOR_C_ESCAPED = 1 << 21  /**< An escaped character */
-};
-
-/**
- * @brief Initialize a new parser 
- * 
- * Initialize and return a new parser struct. Will return NULL if memory can't 
- * be allocated.
- * 
- * @param [in] max_nest maximal nesting level
- * 
- * @return a newly allocated parser
- */
-vktor_parser*
-vktor_parser_init(int max_nest)
-{
-	vktor_parser *parser;
-	
-	if ((parser = malloc(sizeof(vktor_parser))) == NULL) {
-		return NULL;
-	}
-		
-	parser->buffer       = NULL;
-	parser->last_buffer  = NULL;
-	parser->token_type   = VKTOR_T_NONE;
-	parser->token_value  = NULL;
-	parser->token_resume = 0;
-	
-	// set expectated tokens
-	parser->expected   = VKTOR_VALUE_TOKEN;
-
-	// set up nesting stack
-	parser->nest_stack   = calloc(sizeof(vktor_struct), max_nest);
-	parser->nest_ptr     = 0;
-	parser->max_nest     = max_nest;
-			
-	return parser;
-}
+} vktor_specialchar;
 
 /**
  * @brief Free a vktor_buffer struct
@@ -246,32 +218,6 @@ buffer_free_all(vktor_buffer *buffer)
 		buffer_free(buffer);
 		buffer = next;
 	}
-}
-
-/**
- * @brief Free a parser and any associated memory
- * 
- * Free a parser and any associated memory structures, including any linked
- * buffers
- * 
- * @param [in,out] parser parser struct to free
- */
-void
-vktor_parser_free(vktor_parser *parser)
-{
-	assert(parser != NULL);
-	
-	if (parser->buffer != NULL) {
-		buffer_free_all(parser->buffer);
-	}
-	
-	if (parser->token_value != NULL) {
-		free(parser->token_value);
-	}
-	
-	free(parser->nest_stack);
-	
-	free(parser);
 }
 
 /**
@@ -316,23 +262,6 @@ set_error(vktor_error **eptr, vktor_errcode code, const char *msg, ...)
 }
 
 /**
- * @brief Free an error struct
- * 
- * Free an error struct
- * 
- * @param [in,out] err Error struct to free
- */
-void 
-vktor_error_free(vktor_error *err)
-{
-	if (err->message != NULL) {
-		free(err->message);
-	}
-	
-	free(err);
-}
-
-/**
  * @brief Initialize a vktor buffer struct
  * 
  * Initialize a vktor buffer struct and set it's associated text and other 
@@ -358,50 +287,6 @@ buffer_init(char *text, long text_len)
 	buffer->next_buff = NULL;
 	
 	return buffer;
-}
-
-/**
- * @brief Feed the parser's internal buffer with more JSON data
- * 
- * Feed the parser's internal buffer with more JSON data, to be used later when 
- * parsing. This function should be called before starting to parse at least
- * once, and again whenever new data is available and the VKTOR_MORE_DATA 
- * status is returned from vktor_parse().
- * 
- * @param [in] parser   parser object
- * @param [in] text     text to add to buffer
- * @param [in] text_len length of text to add to buffer
- * @param [in,out] err  pointer to an unallocated error struct to return any 
- *                      errors, or NULL if there is no need for error handling
- * 
- * @return vktor status code 
- *  - VKTOR_OK on success 
- *  - VKTOR_ERROR otherwise
- */
-vktor_status 
-vktor_feed(vktor_parser *parser, char *text, long text_len, 
-           vktor_error **err) 
-{
-	vktor_buffer *buffer;
-	
-	// Create buffer
-	if ((buffer = buffer_init(text, text_len)) == NULL) {
-		set_error(err, VKTOR_ERR_OUT_OF_MEMORY, 
-			"Unable to allocate memory buffer for %ld bytes", text_len);
-		return VKTOR_ERROR;
-	}
-	
-	// Link buffer to end of parser buffer chain
-	if (parser->last_buffer == NULL) {
-		assert(parser->buffer == NULL);
-		parser->buffer = buffer;
-		parser->last_buffer = buffer;
-	} else {
-		parser->last_buffer->next_buff = buffer;
-		parser->last_buffer = buffer;
-	}
-	
-	return VKTOR_OK;
 }
 
 /**
@@ -1059,6 +944,95 @@ parser_read_number_token(vktor_parser *parser, vktor_error **error)
 	}
 }
 
+/** @} */ // end of internal PAI
+
+/**
+ * External API
+ * 
+ * @defgroup external External API
+ * @{
+ */
+
+/**
+ * @brief Initialize a new parser 
+ * 
+ * Initialize and return a new parser struct. Will return NULL if memory can't 
+ * be allocated.
+ * 
+ * @param [in] max_nest maximal nesting level
+ * 
+ * @return a newly allocated parser
+ */
+vktor_parser*
+vktor_parser_init(int max_nest)
+{
+	vktor_parser *parser;
+	
+	if ((parser = malloc(sizeof(vktor_parser))) == NULL) {
+		return NULL;
+	}
+		
+	parser->buffer       = NULL;
+	parser->last_buffer  = NULL;
+	parser->token_type   = VKTOR_T_NONE;
+	parser->token_value  = NULL;
+	parser->token_resume = 0;
+	
+	// set expectated tokens
+	parser->expected   = VKTOR_VALUE_TOKEN;
+
+	// set up nesting stack
+	parser->nest_stack   = calloc(sizeof(vktor_struct), max_nest);
+	parser->nest_ptr     = 0;
+	parser->max_nest     = max_nest;
+			
+	return parser;
+}
+
+/**
+ * @brief Feed the parser's internal buffer with more JSON data
+ * 
+ * Feed the parser's internal buffer with more JSON data, to be used later when 
+ * parsing. This function should be called before starting to parse at least
+ * once, and again whenever new data is available and the VKTOR_MORE_DATA 
+ * status is returned from vktor_parse().
+ * 
+ * @param [in] parser   parser object
+ * @param [in] text     text to add to buffer
+ * @param [in] text_len length of text to add to buffer
+ * @param [in,out] err  pointer to an unallocated error struct to return any 
+ *                      errors, or NULL if there is no need for error handling
+ * 
+ * @return vktor status code 
+ *  - VKTOR_OK on success 
+ *  - VKTOR_ERROR otherwise
+ */
+vktor_status 
+vktor_feed(vktor_parser *parser, char *text, long text_len, 
+           vktor_error **err) 
+{
+	vktor_buffer *buffer;
+	
+	// Create buffer
+	if ((buffer = buffer_init(text, text_len)) == NULL) {
+		set_error(err, VKTOR_ERR_OUT_OF_MEMORY, 
+			"Unable to allocate memory buffer for %ld bytes", text_len);
+		return VKTOR_ERROR;
+	}
+	
+	// Link buffer to end of parser buffer chain
+	if (parser->last_buffer == NULL) {
+		assert(parser->buffer == NULL);
+		parser->buffer = buffer;
+		parser->last_buffer = buffer;
+	} else {
+		parser->last_buffer->next_buff = buffer;
+		parser->last_buffer = buffer;
+	}
+	
+	return VKTOR_OK;
+}
+
 /**
  * @brief Parse some JSON text and return on the next token
  * 
@@ -1564,3 +1538,48 @@ vktor_get_value_str_copy(vktor_parser *parser, char **val, vktor_error **error)
 	*val = str;
 	return parser->token_size;
 }
+
+/**
+ * @brief Free a parser and any associated memory
+ * 
+ * Free a parser and any associated memory structures, including any linked
+ * buffers
+ * 
+ * @param [in,out] parser parser struct to free
+ */
+void
+vktor_parser_free(vktor_parser *parser)
+{
+	assert(parser != NULL);
+	
+	if (parser->buffer != NULL) {
+		buffer_free_all(parser->buffer);
+	}
+	
+	if (parser->token_value != NULL) {
+		free(parser->token_value);
+	}
+	
+	free(parser->nest_stack);
+	
+	free(parser);
+}
+
+/**
+ * @brief Free an error struct
+ * 
+ * Free an error struct
+ * 
+ * @param [in,out] err Error struct to free
+ */
+void 
+vktor_error_free(vktor_error *err)
+{
+	if (err->message != NULL) {
+		free(err->message);
+	}
+	
+	free(err);
+}
+
+/** @} */ // end of external API

@@ -25,15 +25,37 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/**
+ * @file vktor.h
+ * 
+ * vktor header file - defines the external API and types available to vktor
+ * users. 
+ * 
+ */
+
 #ifndef _VKTOR_H
+
+/**
+ * Parser struct - this is the main object used by the user to parse a JSON 
+ * stream. This opaque structure is defined internally in vktor.c.
+ */
+typedef struct _vktor_parser_struct vktor_parser;
 
 /* type definitions */
 
 /**
+ * @defgroup external External API
+ * @{
+ */
+
+/**
+ * @enum vktor_token
+ * 
  * JSON token types
  * 
- * Whenever a token is encountered during the parsing process, the value of 
- * vktor_parser#token_type is set to one of these values
+ * Whenever a token is encountered during the parsing process, calling 
+ * vktor_get_token_type() will return one of these values to indicate the token
+ * type.
  */
 typedef enum {
 	VKTOR_T_NONE         =  0,
@@ -51,6 +73,8 @@ typedef enum {
 } vktor_token;
 
 /**
+ * @enum vktor_struct
+ * 
  * Possible JSON struct types (array or object)
  */
 typedef enum {
@@ -60,6 +84,8 @@ typedef enum {
 } vktor_struct; 
 
 /**
+ * @enum vktor_status
+ * 
  * Possible vktor parser status codes
  */
 typedef enum {
@@ -70,6 +96,8 @@ typedef enum {
 } vktor_status;
 
 /**
+ * @enum vktor_errcode
+ * 
  * Possible error codes used in vktor_error->code 
  */
 typedef enum {
@@ -92,12 +120,6 @@ typedef struct _vktor_error_struct {
 	vktor_errcode  code;    /**< error code */
 	char          *message; /**< error message */
 } vktor_error;
-
-/**
- * Parser struct - this is the main object used by the user to parse a JSON 
- * stream. 
- */
-typedef struct _vktor_parser_struct vktor_parser;
 
 /* function prototypes */
 
@@ -216,17 +238,16 @@ vktor_struct vktor_get_current_struct(vktor_parser *parser);
  * value of VKTOR_T_FLOAT tokens and even any numeric prefix of a VKTOR_T_STRING
  * token. 
  * 
- * Uses atol() internally. 
- * 
  * If the value of a number token is larger than the system's maximal long, 
- * the error code will indicate overflow and vktor_get_value_string() should be
- * used instead.
+ * 0 is returned and error will indicate overflow. In such cases, 
+ * vktor_get_value_string() should be used to get the value as a string.
  * 
  * @param [in]  parser Parser object
  * @param [out] error  Error object pointer pointer or null
  * 
- * @return The numeric value of the current token as a long int, or 0 in case 
- *         of error
+ * @return The numeric value of the current token as a long int, 
+ * @retval 0 in case of error (although 0 might also be normal, so check the 
+ *         value of error)
  */
 long vktor_get_value_long(vktor_parser *parser, vktor_error **error);
 
@@ -237,7 +258,7 @@ long vktor_get_value_long(vktor_parser *parser, vktor_error **error);
  * number. Suitable for reading the value of VKTOR_T_FLOAT tokens.
  * 
  * If the value of a number token is larger than the system's HUGE_VAL 0 is 
- * returned and #error will indicate overflow. In such cases, 
+ * returned and error will indicate overflow. In such cases, 
  * vktor_get_value_string() should be used to get the value as a string.
  * 
  * @param [in]  parser Parser object
@@ -245,7 +266,7 @@ long vktor_get_value_long(vktor_parser *parser, vktor_error **error);
  * 
  * @return The numeric value of the current token as a double 
  * @retval 0 in case of error (although 0 might also be normal, so check the 
- *         value of #error)
+ *         value of error)
  */
 double vktor_get_value_double(vktor_parser *parser, vktor_error **error);
 
@@ -256,7 +277,7 @@ double vktor_get_value_double(vktor_parser *parser, vktor_error **error);
  * token. Suitable for getting the value of a VKTOR_T_STRING token, but also 
  * for reading numeric values as a string. 
  * 
- * Note that the string pointer populated into #val is owned by the parser and 
+ * Note that the string pointer populated into val is owned by the parser and 
  * should not be freed by the user.
  * 
  * @param [in]  parser Parser object
@@ -265,7 +286,7 @@ double vktor_get_value_double(vktor_parser *parser, vktor_error **error);
  * 
  * @return The length of the string
  * @retval 0 in case of error (although 0 might also be normal, so check the 
- *         value of #error)
+ *         value of error)
  */
 int vktor_get_value_str(vktor_parser *parser, char **val, vktor_error **error);
 
@@ -282,11 +303,11 @@ int vktor_get_value_str(vktor_parser *parser, char **val, vktor_error **error);
  * 
  * @return The length of the string
  * @retval 0 in case of error (although 0 might also be normal, so check the 
- *         value of #error)
+ *         value of error)
  */
 int vktor_get_value_str_copy(vktor_parser *parser, char **val, vktor_error **error);
 
-
+/** @} */ // end of external API
 
 #define _VKTOR_H
 #endif /* VKTOR_H */
