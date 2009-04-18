@@ -1,0 +1,43 @@
+vktor - a simple JSON pull parser library               (c) 2009 Shahar Evron
+-----------------------------------------------------------------------------
+vktor is a simple library that can be used to parse JSON streams using pull,
+forward only approach. 
+
+vktor will not parse an entire JSON document at once - instead, parsing is 
+iterative and whenever a JSON token is encountered, vktor will provide 
+information about the token and data, which you can use in your application, 
+and will allow you to continue parsing on. Previous tokens and values are 
+never kept and there is no ability to jump to random points in the parsed 
+JSON document. In fact, vktor doesn't need a complete JSON document - as it
+works on streams.
+
+Parsing JSON streams or documents using vktor will require more effort from
+developers than one-off entire document parsers. On the other hand, it allows
+to parse JSON streams (and even entire documents) in a memory-efficient 
+manner, as you do not need to read the entire document first or keep a 
+representation of the entire document in memory. 
+
+Disclaimer
+----------
+I have started writing vktor as an educational experiment. I am not 
+experienced with writing parsers and honestly I am not sure if I've done it
+"the right way". Currently I am focusing on creating a complete, working 
+parser, and if it works, I might optimize it. 
+
+If you think there are ways to improve my code, by all means, please let me
+know (or feel free to send patches). 
+
+Acknowledgments
+----------------
+I started creating vktor after taking some inspiration and ideas from yajl
+<http://github.com/lloyd/yajl/>. yajl is also a pull-parser for JSON streams
+which takes an event based approach. At the time, this was less convenient 
+for me so I started writing vktor, but some of the ideas and API of yajl were
+used as an inspiration when creating vktor.
+
+License
+-------
+vktor is Free Software, and is distributed under the terms of the MIT 
+license. See COPYING for detailed licensing information.
+
+
