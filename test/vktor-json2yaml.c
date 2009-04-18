@@ -62,17 +62,17 @@
 
 #define print_indent(s) for (i = 0; i < indent; i++) { printf(s);	}
 
-#define print_array_indent_dash(s)       \
-	if (nest == VKTOR_CONTAINER_ARRAY) { \
-		print_indent(s);                 \
-		printf("- ");                    \
+#define print_array_indent_dash(s)    \
+	if (nest == VKTOR_STRUCT_ARRAY) { \
+		print_indent(s);              \
+		printf("- ");                 \
 	}
 
 int indent  = 0;
 int is_root = 1;
 
 static int
-handle_token(vktor_parser *parser, vktor_container nest, vktor_error **error)
+handle_token(vktor_parser *parser, vktor_struct nest, vktor_error **error)
 {
 	char   *str;
 	long    num;
@@ -94,7 +94,7 @@ handle_token(vktor_parser *parser, vktor_container nest, vktor_error **error)
 			}
 			break;
 			
-		case VKTOR_T_MAP_START:
+		case VKTOR_T_OBJECT_START:
 			if (! is_root) {
 				print_array_indent_dash(INDENT_STR);
 				printf("\n");
@@ -105,7 +105,7 @@ handle_token(vktor_parser *parser, vktor_container nest, vktor_error **error)
 			
 			break;
 		
-		case VKTOR_T_MAP_KEY:
+		case VKTOR_T_OBJECT_KEY:
 			print_indent(INDENT_STR);
 			vktor_get_value_str(parser, &str, error);
 			if (*error != NULL) {
@@ -171,7 +171,7 @@ handle_token(vktor_parser *parser, vktor_container nest, vktor_error **error)
 			indent--;
 			break;
 		
-		case VKTOR_T_MAP_END:
+		case VKTOR_T_OBJECT_END:
 			indent--;
 			break;
 		
@@ -206,7 +206,7 @@ main(int argc, char *argv[], char *envp[])
 	vktor_parser    *parser;
 	vktor_status     status;
 	vktor_error     *error = NULL;
-	vktor_container  nest;
+	vktor_struct  nest;
 	char            *buffer;
 	size_t           read_bytes;
 	int              done = 0, ret = 0;
@@ -221,7 +221,7 @@ main(int argc, char *argv[], char *envp[])
 	parser = vktor_parser_init(128);
 	
 	do {
-		nest = vktor_get_current_container(parser);
+		nest = vktor_get_current_struct(parser);
 		status = vktor_parse(parser, &error);
 		
 		switch (status) {
@@ -241,7 +241,7 @@ main(int argc, char *argv[], char *envp[])
 				buffer = malloc(sizeof(char) * buffsize);
 				read_bytes = fread(buffer, sizeof(char), buffsize, stdin);
 				if (read_bytes) {
-					vktor_read_buffer(parser, buffer, read_bytes, &error);
+					vktor_feed(parser, buffer, read_bytes, &error);
 					
 				} else {
 					// Nothing left to read

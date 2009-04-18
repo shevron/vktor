@@ -36,28 +36,28 @@
  * vktor_parser#token_type is set to one of these values
  */
 typedef enum {
-	VKTOR_T_NONE        =  0,
-	VKTOR_T_NULL        =  1,
-	VKTOR_T_FALSE       =  1 << 1,
-	VKTOR_T_TRUE        =  1 << 2,
-	VKTOR_T_INT         =  1 << 3,
-	VKTOR_T_FLOAT       =  1 << 4,
-	VKTOR_T_STRING      =  1 << 5,
-	VKTOR_T_ARRAY_START =  1 << 6,
-	VKTOR_T_ARRAY_END   =  1 << 7,
-	VKTOR_T_MAP_START   =  1 << 8,
-	VKTOR_T_MAP_KEY     =  1 << 9,
-	VKTOR_T_MAP_END     =  1 << 10,
+	VKTOR_T_NONE         =  0,
+	VKTOR_T_NULL         =  1,
+	VKTOR_T_FALSE        =  1 << 1,
+	VKTOR_T_TRUE         =  1 << 2,
+	VKTOR_T_INT          =  1 << 3,
+	VKTOR_T_FLOAT        =  1 << 4,
+	VKTOR_T_STRING       =  1 << 5,
+	VKTOR_T_ARRAY_START  =  1 << 6,
+	VKTOR_T_ARRAY_END    =  1 << 7,
+	VKTOR_T_OBJECT_START =  1 << 8,
+	VKTOR_T_OBJECT_KEY   =  1 << 9,
+	VKTOR_T_OBJECT_END   =  1 << 10,
 } vktor_token;
 
 /**
- * Possible JSON container types
+ * Possible JSON struct types (array or object)
  */
 typedef enum {
-	VKTOR_CONTAINER_NONE,  /**< No container */
-	VKTOR_CONTAINER_ARRAY, /**< Array */
-	VKTOR_CONTAINER_OBJECT /**< Object (AKA map, associative array) */
-} vktor_container; 
+	VKTOR_STRUCT_NONE,  /**< No struct */
+	VKTOR_STRUCT_ARRAY, /**< Array */
+	VKTOR_STRUCT_OBJECT /**< Object (AKA map, associative array) */
+} vktor_struct; 
 
 /**
  * Possible vktor parser status codes
@@ -133,12 +133,12 @@ void vktor_parser_free(vktor_parser *parser);
 void vktor_error_free(vktor_error *err);
 
 /**
- * @brief Read and store JSON text in the internal buffer
+ * @brief Feed the parser's internal buffer with more JSON data
  * 
- * Read and store JSON text in the internal buffer, to be used later when 
+ * Feed the parser's internal buffer with more JSON data, to be used later when 
  * parsing. This function should be called before starting to parse at least
- * once (to feed the parser), and again whenever new data is available and the
- * VKTOR_MORE_DATA status is returned from vktor_parse().
+ * once, and again whenever new data is available and the VKTOR_MORE_DATA 
+ * status is returned from vktor_parse().
  * 
  * @param [in] parser   parser object
  * @param [in] text     text to add to buffer
@@ -146,10 +146,12 @@ void vktor_error_free(vktor_error *err);
  * @param [in,out] err  pointer to an unallocated error struct to return any 
  *                      errors, or NULL if there is no need for error handling
  * 
- * @return vktor status code (OK on success, ERROR otherwise)
+ * @return vktor status code 
+ *  - VKTOR_OK on success 
+ *  - VKTOR_ERROR otherwise
  */
-vktor_status vktor_read_buffer(vktor_parser *parser, char *text, long text_len, 
-                               vktor_error **err);
+vktor_status vktor_feed(vktor_parser *parser, char *text, long text_len, 
+                        vktor_error **err);
 
 /**
  * @brief Parse some JSON text and return on the next token
@@ -194,17 +196,17 @@ vktor_token vktor_get_token_type(vktor_parser *parser);
 int vktor_get_depth(vktor_parser *parser);
 
 /**
- * @brief Get the current container type
+ * @brief Get the current struct type
  * 
- * Get the container type (object, array or none) containing the current token
+ * Get the struct type (object, array or none) containing the current token
  * pointed to by the parser
  * 
  * @param [in] parser Parser object
  * 
- * @return A vktor_container value or VKTOR_CONTAINER_NONE if we are in the top 
+ * @return A vktor_struct value or VKTOR_STRUCT_NONE if we are in the top 
  *   level
  */
-vktor_container vktor_get_current_container(vktor_parser *parser);
+vktor_struct vktor_get_current_struct(vktor_parser *parser);
 
 /**
  * @brief Get the token value as a long integer

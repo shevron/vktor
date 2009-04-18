@@ -26,12 +26,10 @@
  */
 
 /**
- * @file vktor.c 
- * Main vktor library file
+ * @file vktor.c
  * 
- * @todo Terminology: use 'object' for JSON object everywhere instead of map
- * @todo Terminology: use 'struct' for JSON container (array or object)
- * @todo Drop the 'vktor' prefix from static stuff
+ * Main vktor library file. Defines the external API of vktor as well as some 
+ * internal static functions, data types and macros.
  */
 
 #include "config.h"
@@ -71,8 +69,8 @@
 /**
  * Convenience macro to set an 'unexpected character' error
  */
-#define vktor_error_set_unexpected_c(e, c)         \
-	vktor_error_set(e, VKTOR_ERR_UNEXPECTED_INPUT, \
+#define set_error_unexpected_c(e, c)         \
+	set_error(e, VKTOR_ERR_UNEXPECTED_INPUT, \
 		"Unexpected character in input: %c", c)
 
 /**
@@ -85,7 +83,7 @@
 						  VKTOR_T_FLOAT       | \
 						  VKTOR_T_STRING      | \
 						  VKTOR_T_ARRAY_START | \
-						  VKTOR_T_MAP_START
+						  VKTOR_T_OBJECT_START
 
 /**
  * Convenience macro to check if we are in a specific type of JSON struct
@@ -94,38 +92,38 @@
 
 /**
  * Convenience macro to easily set the expected next token map after a value
- * token, taking current container struct (if any) into account.
+ * token, taking current struct struct (if any) into account.
  */
-#define expect_next_value_token(p)                 \
-	switch(p->nest_stack[p->nest_ptr]) {           \
-		case VKTOR_CONTAINER_OBJECT:               \
-			p->expected = VKTOR_C_COMMA |          \
-							VKTOR_T_MAP_END;       \
-			break;                                 \
-												   \
-		case VKTOR_CONTAINER_ARRAY:                \
-			p->expected = VKTOR_C_COMMA |          \
-							VKTOR_T_ARRAY_END;     \
-			break;                                 \
-												   \
-		default:                                   \
-			p->expected = VKTOR_T_NONE;            \
-			break;                                 \
+#define expect_next_value_token(p)              \
+	switch(p->nest_stack[p->nest_ptr]) {        \
+		case VKTOR_STRUCT_OBJECT:               \
+			p->expected = VKTOR_C_COMMA |       \
+							VKTOR_T_OBJECT_END; \
+			break;                              \
+												\
+		case VKTOR_STRUCT_ARRAY:                \
+			p->expected = VKTOR_C_COMMA |       \
+							VKTOR_T_ARRAY_END;  \
+			break;                              \
+												\
+		default:                                \
+			p->expected = VKTOR_T_NONE;         \
+			break;                              \
 	}
 
 /**
  * Convenience macro to check, and reallocate if needed, the memory size for
  * reading a token
  */
-#define check_reallocate_token_memory(cs)                               \
-	if ((ptr + 1) >= maxlen) {                                          \
-		maxlen = maxlen + cs;                                           \
-		if ((token = realloc(token, maxlen * sizeof(char))) == NULL) {  \
-			vktor_error_set(error, VKTOR_ERR_OUT_OF_MEMORY,             \
-				"unable to allocate %d more bytes for string parsing",  \
-				cs);                                                    \
-			return VKTOR_ERROR;                                         \
-		}                                                               \
+#define check_reallocate_token_memory(cs)                              \
+	if ((ptr + 1) >= maxlen) {                                         \
+		maxlen = maxlen + cs;                                          \
+		if ((token = realloc(token, maxlen * sizeof(char))) == NULL) { \
+			set_error(error, VKTOR_ERR_OUT_OF_MEMORY,                  \
+				"unable to allocate %d more bytes for string parsing", \
+				cs);                                                   \
+			return VKTOR_ERROR;                                        \
+		}                                                              \
 	}
 
 /**
@@ -158,7 +156,7 @@ struct _vktor_parser_struct {
 	int              token_size;   /**< current token value length, if any */
 	char             token_resume; /**< current token is only half read */        
 	long             expected;     /**< bitmask of possible expected tokens */
-	vktor_container *nest_stack;   /**< array holding current nesting stack */
+	vktor_struct    *nest_stack;   /**< array holding current nesting stack */
 	int              nest_ptr;     /**< pointer to the current nesting level */
 	int              max_nest;     /**< maximal nesting level */
 };
@@ -205,7 +203,7 @@ vktor_parser_init(int max_nest)
 	parser->expected   = VKTOR_VALUE_TOKEN;
 
 	// set up nesting stack
-	parser->nest_stack   = calloc(sizeof(vktor_container), max_nest);
+	parser->nest_stack   = calloc(sizeof(vktor_struct), max_nest);
 	parser->nest_ptr     = 0;
 	parser->max_nest     = max_nest;
 			
@@ -216,12 +214,12 @@ vktor_parser_init(int max_nest)
  * @brief Free a vktor_buffer struct
  * 
  * Free a vktor_buffer struct without following any next buffers in the chain. 
- * Call vktor_buffer_free_all() to free an entire chain of buffers.
+ * Call buffer_free_all() to free an entire chain of buffers.
  * 
  * @param[in,out] buffer the buffer to free
  */
 static void 
-vktor_buffer_free(vktor_buffer *buffer)
+buffer_free(vktor_buffer *buffer)
 {
 	assert(buffer != NULL);
 	assert(buffer->text != NULL);
@@ -239,13 +237,13 @@ vktor_buffer_free(vktor_buffer *buffer)
  * @param[in,out] buffer the first buffer in the list to free
  */
 static void 
-vktor_buffer_free_all(vktor_buffer *buffer)
+buffer_free_all(vktor_buffer *buffer)
 {
 	vktor_buffer *next;
 	
 	while (buffer != NULL) {
 		next = buffer->next_buff;
-		vktor_buffer_free(buffer);
+		buffer_free(buffer);
 		buffer = next;
 	}
 }
@@ -264,7 +262,7 @@ vktor_parser_free(vktor_parser *parser)
 	assert(parser != NULL);
 	
 	if (parser->buffer != NULL) {
-		vktor_buffer_free_all(parser->buffer);
+		buffer_free_all(parser->buffer);
 	}
 	
 	if (parser->token_value != NULL) {
@@ -292,7 +290,7 @@ vktor_parser_free(vktor_parser *parser)
  * @param [in]     msg  error message (sprintf-style format)
  */
 static void 
-vktor_error_set(vktor_error **eptr, vktor_errcode code, const char *msg, ...)
+set_error(vktor_error **eptr, vktor_errcode code, const char *msg, ...)
 {
 	vktor_error *err;
 	
@@ -346,7 +344,7 @@ vktor_error_free(vktor_error *err)
  * @return A newly-allocated buffer struct
  */
 static vktor_buffer*
-vktor_buffer_init(char *text, long text_len)
+buffer_init(char *text, long text_len)
 {
 	vktor_buffer *buffer;
 	
@@ -363,12 +361,12 @@ vktor_buffer_init(char *text, long text_len)
 }
 
 /**
- * @brief Read and store JSON text in the internal buffer
+ * @brief Feed the parser's internal buffer with more JSON data
  * 
- * Read and store JSON text in the internal buffer, to be used later when 
+ * Feed the parser's internal buffer with more JSON data, to be used later when 
  * parsing. This function should be called before starting to parse at least
- * once (to feed the parser), and again whenever new data is available and the
- * VKTOR_MORE_DATA status is returned from vktor_parse().
+ * once, and again whenever new data is available and the VKTOR_MORE_DATA 
+ * status is returned from vktor_parse().
  * 
  * @param [in] parser   parser object
  * @param [in] text     text to add to buffer
@@ -376,17 +374,19 @@ vktor_buffer_init(char *text, long text_len)
  * @param [in,out] err  pointer to an unallocated error struct to return any 
  *                      errors, or NULL if there is no need for error handling
  * 
- * @return vktor status code (OK on success, ERROR otherwise)
+ * @return vktor status code 
+ *  - VKTOR_OK on success 
+ *  - VKTOR_ERROR otherwise
  */
 vktor_status 
-vktor_read_buffer(vktor_parser *parser, char *text, long text_len, 
-                  vktor_error **err) 
+vktor_feed(vktor_parser *parser, char *text, long text_len, 
+           vktor_error **err) 
 {
 	vktor_buffer *buffer;
 	
 	// Create buffer
-	if ((buffer = vktor_buffer_init(text, text_len)) == NULL) {
-		vktor_error_set(err, VKTOR_ERR_OUT_OF_MEMORY, 
+	if ((buffer = buffer_init(text, text_len)) == NULL) {
+		set_error(err, VKTOR_ERR_OUT_OF_MEMORY, 
 			"Unable to allocate memory buffer for %ld bytes", text_len);
 		return VKTOR_ERROR;
 	}
@@ -424,7 +424,7 @@ parser_advance_buffer(vktor_parser *parser)
 	assert(eobuffer(parser->buffer));
 	
 	next = parser->buffer->next_buff;
-	vktor_buffer_free(parser->buffer);
+	buffer_free(parser->buffer);
 	parser->buffer = next;
 	
 	if (parser->buffer == NULL) {
@@ -462,20 +462,20 @@ parser_set_token(vktor_parser *parser, vktor_token token, void *value)
  * overflowed.
  * 
  * @param [in,out] parser    Parser object
- * @param [in]     nest_type nesting type - array or map
+ * @param [in]     nest_type nesting type - array or object
  * @param [out]    error     an error struct pointer pointer or NULL
  * 
  * @return Status code - VKTOR_OK or VKTOR_ERROR
  */
 static vktor_status
-nest_stack_add(vktor_parser *parser, vktor_container nest_type, 
+nest_stack_add(vktor_parser *parser, vktor_struct nest_type, 
 	vktor_error **error)
 {
 	assert(parser != NULL);
 	
 	parser->nest_ptr++;
 	if (parser->nest_ptr >= parser->max_nest) {
-		vktor_error_set(error, VKTOR_ERR_MAX_NEST, 
+		set_error(error, VKTOR_ERR_MAX_NEST, 
 			"maximal nesting level of %d reached", parser->max_nest);
 		return VKTOR_ERROR;
 	}
@@ -488,8 +488,8 @@ nest_stack_add(vktor_parser *parser, vktor_container nest_type,
 /**
  * @brief pop a nesting level out of the nesting stack
  * 
- * Pop a nesting level out of the nesting stack when the end of an array or a
- * map is encountered. Will ensure there are no stack underflows.
+ * Pop a nesting level out of the nesting stack when the end of an array or an
+ * object is encountered. Will ensure there are no stack underflows.
  * 
  * @param [in,out] parser Parser object
  * @param [out]    error struct pointer pointer or NULL
@@ -504,7 +504,7 @@ nest_stack_pop(vktor_parser *parser, vktor_error **error)
 	
 	parser->nest_ptr--;
 	if (parser->nest_ptr < 0) {
-		vktor_error_set(error, VKTOR_ERR_INTERNAL_ERR, 
+		set_error(error, VKTOR_ERR_INTERNAL_ERR, 
 			"internal parser error: nesting stack pointer underflow");
 		return VKTOR_ERROR;
 	}
@@ -557,7 +557,7 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 	}
 	
 	if (token == NULL) {
-		vktor_error_set(error, VKTOR_ERR_OUT_OF_MEMORY, 
+		set_error(error, VKTOR_ERR_OUT_OF_MEMORY, 
 			"unable to allocate %d bytes for string parsing", 
 			VKTOR_STR_MEMCHUNK);
 		return VKTOR_ERROR;
@@ -612,7 +612,7 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 					default:
 						// what is this?
 						// throw an error or deal as a regular character?
-						vktor_error_set_unexpected_c(error, c);
+						set_error_unexpected_c(error, c);
 						parser->expected = parser->expected & ~VKTOR_C_ESCAPED;
 						return VKTOR_ERROR;
 						break;
@@ -639,7 +639,7 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 							 * charaters (maybe they are the same?
 							 */
 							// Invalid control character
-							vktor_error_set_unexpected_c(error, c);
+							set_error_unexpected_c(error, c);
 							return VKTOR_ERROR;
 						}
 						
@@ -718,10 +718,10 @@ parser_read_objkey_token(vktor_parser *parser, vktor_error **error)
 {
 	vktor_status status;
 	
-	assert(nest_stack_in(parser, VKTOR_CONTAINER_OBJECT));
+	assert(nest_stack_in(parser, VKTOR_STRUCT_OBJECT));
 	
 	if (! parser->token_resume) {
-		parser_set_token(parser, VKTOR_T_MAP_KEY, NULL);
+		parser_set_token(parser, VKTOR_T_OBJECT_KEY, NULL);
 	}
 	
 	// Read string	
@@ -786,7 +786,7 @@ parser_read_expectedstr(vktor_parser *parser, const char *expect, int explen,
 		
 		c = parser->buffer->text[parser->buffer->ptr];
 		if (expect[parser->token_size] != c) {
-			vktor_error_set_unexpected_c(error, c);
+			set_error_unexpected_c(error, c);
 			return VKTOR_ERROR;
 		}
 		
@@ -918,10 +918,10 @@ parser_read_number_token(vktor_parser *parser, vktor_error **error)
 		ptr    = 0;
 		
 		// Reading a new token - set possible expected characters
-		parser->expected = VKTOR_T_INT | 
-		                   VKTOR_T_FLOAT | 
-						   VKTOR_C_DOT | 
-						   VKTOR_C_EXP | 
+		parser->expected = VKTOR_T_INT    | 
+		                   VKTOR_T_FLOAT  | 
+						   VKTOR_C_DOT    | 
+						   VKTOR_C_EXP    | 
 						   VKTOR_C_SIGNUM;
 						   
 		// Free previous token and set token type to INT until proven otherwise 
@@ -929,7 +929,7 @@ parser_read_number_token(vktor_parser *parser, vktor_error **error)
 	}
 	
 	if (token == NULL) {
-		vktor_error_set(error, VKTOR_ERR_OUT_OF_MEMORY, 
+		set_error(error, VKTOR_ERR_OUT_OF_MEMORY, 
 			"unable to allocate %d bytes for string parsing", 
 			VKTOR_NUM_MEMCHUNK);
 		return VKTOR_ERROR;
@@ -959,7 +959,7 @@ parser_read_number_token(vktor_parser *parser, vktor_error **error)
 					
 				case '.':
 					if (! (parser->expected & VKTOR_C_DOT && ptr > 0)) {
-						vktor_error_set_unexpected_c(error, c);
+						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
 					
@@ -975,7 +975,7 @@ parser_read_number_token(vktor_parser *parser, vktor_error **error)
 				case '-':
 				case '+':
 					if (! (parser->expected & VKTOR_C_SIGNUM)) {
-						vktor_error_set_unexpected_c(error, c);
+						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
 					
@@ -988,7 +988,7 @@ parser_read_number_token(vktor_parser *parser, vktor_error **error)
 				case 'e':
 				case 'E':
 					if (! (parser->expected & VKTOR_C_EXP && ptr > 0)) {
-						vktor_error_set_unexpected_c(error, c);
+						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
 					
@@ -997,7 +997,7 @@ parser_read_number_token(vktor_parser *parser, vktor_error **error)
 						case '.':
 						case '+':
 						case '-':
-							vktor_error_set_unexpected_c(error, c);
+							set_error_unexpected_c(error, c);
 							return VKTOR_ERROR;
 							break;
 					}
@@ -1026,7 +1026,7 @@ parser_read_number_token(vktor_parser *parser, vktor_error **error)
 						case '.':
 						case '+':
 						case '-':
-							vktor_error_set_unexpected_c(error, c);
+							set_error_unexpected_c(error, c);
 							return VKTOR_ERROR;
 							break;
 					}
@@ -1092,7 +1092,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 		if (parser->token_resume) {
 						
 		    switch (parser->token_type) {
-		    	case VKTOR_T_MAP_KEY:
+		    	case VKTOR_T_OBJECT_KEY:
 		    		return parser_read_objkey_token(parser, error);
 		    		break;
 		    		
@@ -1118,7 +1118,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					break;
 					
 		    	default:
-		    		vktor_error_set(error, VKTOR_ERR_INTERNAL_ERR, 
+		    		set_error(error, VKTOR_ERR_INTERNAL_ERR, 
 		    			"token resume flag is set but token type %d is unexpected",
 		    			parser->token_type);
 		    		return VKTOR_ERROR;
@@ -1131,31 +1131,31 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 			
 			switch (c) {
 				case '{':
-					if (! parser->expected & VKTOR_T_MAP_START) {
-						vktor_error_set_unexpected_c(error, c);
+					if (! parser->expected & VKTOR_T_OBJECT_START) {
+						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
 					
-					if (nest_stack_add(parser, VKTOR_CONTAINER_OBJECT, error) == VKTOR_ERROR) {
+					if (nest_stack_add(parser, VKTOR_STRUCT_OBJECT, error) == VKTOR_ERROR) {
 						return VKTOR_ERROR;
 					}
 					
-					parser_set_token(parser, VKTOR_T_MAP_START, NULL);
+					parser_set_token(parser, VKTOR_T_OBJECT_START, NULL);
 					
-					// Expecting: map key or map end
-					parser->expected = VKTOR_T_MAP_KEY |
-					                   VKTOR_T_MAP_END;
+					// Expecting: object key or object end
+					parser->expected = VKTOR_T_OBJECT_KEY |
+					                   VKTOR_T_OBJECT_END;
 					
 					done = 1;
 					break;
 					
 				case '[':
 					if (! parser->expected & VKTOR_T_ARRAY_START) {
-						vktor_error_set_unexpected_c(error, c);
+						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
 					
-					if (nest_stack_add(parser, VKTOR_CONTAINER_ARRAY, error) == VKTOR_ERROR) {
+					if (nest_stack_add(parser, VKTOR_STRUCT_ARRAY, error) == VKTOR_ERROR) {
 						return VKTOR_ERROR;
 					}
 					
@@ -1170,14 +1170,14 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					
 				case '"':
 					if (! parser->expected & (VKTOR_T_STRING | 
-					                          VKTOR_T_MAP_KEY)) {
-						vktor_error_set_unexpected_c(error, c);
+					                          VKTOR_T_OBJECT_KEY)) {
+						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
 					
 					parser->buffer->ptr++;	 
 					
-					if (parser->expected & VKTOR_T_MAP_KEY) {
+					if (parser->expected & VKTOR_T_OBJECT_KEY) {
 						return parser_read_objkey_token(parser, error);
 					} else {
 						return parser_read_string_token(parser, error);
@@ -1187,21 +1187,21 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 				
 				case ',':
 					if (! parser->expected & VKTOR_C_COMMA) {
-						vktor_error_set_unexpected_c(error, c);
+						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
 					
 					switch(parser->nest_stack[parser->nest_ptr]) {
-						case VKTOR_CONTAINER_OBJECT:
-							parser->expected = VKTOR_T_MAP_KEY;
+						case VKTOR_STRUCT_OBJECT:
+							parser->expected = VKTOR_T_OBJECT_KEY;
 							break;
 							
-						case VKTOR_CONTAINER_ARRAY:
+						case VKTOR_STRUCT_ARRAY:
 							parser->expected = VKTOR_VALUE_TOKEN;
 							break;
 							
 						default:
-							vktor_error_set(error, VKTOR_ERR_INTERNAL_ERR, 
+							set_error(error, VKTOR_ERR_INTERNAL_ERR, 
 								"internal parser error: unexpected nesting stack member");
 							return VKTOR_ERROR;
 							break;
@@ -1212,35 +1212,35 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 				
 				case ':':
 					if (! parser->expected & VKTOR_C_COLON) {
-						vktor_error_set_unexpected_c(error, c);
+						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
 					
-					// Colon is only expected inside maps
-					assert(nest_stack_in(parser, VKTOR_CONTAINER_OBJECT));
+					// Colon is only expected inside objects
+					assert(nest_stack_in(parser, VKTOR_STRUCT_OBJECT));
 					
 					// Next we expected a value
 					parser->expected = VKTOR_VALUE_TOKEN;
 					break;
 					
 				case '}':
-					if (! (parser->expected & VKTOR_T_MAP_END &&
-					       nest_stack_in(parser, VKTOR_CONTAINER_OBJECT))) {
+					if (! (parser->expected & VKTOR_T_OBJECT_END &&
+					       nest_stack_in(parser, VKTOR_STRUCT_OBJECT))) {
 					
-						vktor_error_set_unexpected_c(error, c);
+						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
 					
-					parser_set_token(parser, VKTOR_T_MAP_END, NULL);
+					parser_set_token(parser, VKTOR_T_OBJECT_END, NULL);
 					
 					if (nest_stack_pop(parser, error) == VKTOR_ERROR) {
 						return VKTOR_ERROR;
 					} 
 					
 					if (parser->nest_ptr > 0) {
-						// Next can be either a comma, or end of array / map
+						// Next can be either a comma, or end of array / object
 						parser->expected = VKTOR_C_COMMA | 
-											 VKTOR_T_MAP_END | 
+											 VKTOR_T_OBJECT_END | 
 											 VKTOR_T_ARRAY_END;
 					} else {
 						// Next can be nothing
@@ -1252,9 +1252,9 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					
 				case ']':
 					if (! (parser->expected & VKTOR_T_ARRAY_END &&
-					       nest_stack_in(parser, VKTOR_CONTAINER_ARRAY))) { 
+					       nest_stack_in(parser, VKTOR_STRUCT_ARRAY))) { 
 					
-						vktor_error_set_unexpected_c(error, c);
+						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
 					parser_set_token(parser, VKTOR_T_ARRAY_END, NULL);
@@ -1264,10 +1264,10 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					} 
 					
 					if (parser->nest_ptr > 0) {
-						// Next can be either a comma, or end of array / map
-						parser->expected = VKTOR_C_COMMA | 
-											 VKTOR_T_MAP_END | 
-											 VKTOR_T_ARRAY_END;
+						// Next can be either a comma, or end of array / object
+						parser->expected = VKTOR_C_COMMA      | 
+						                   VKTOR_T_OBJECT_END | 
+										   VKTOR_T_ARRAY_END;
 					} else {
 						// Next can be nothing
 						parser->expected = VKTOR_T_NONE;
@@ -1289,7 +1289,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 				case 't':
 					// true?
 					if (! parser->expected & VKTOR_T_TRUE) {
-						vktor_error_set_unexpected_c(error, c);
+						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
 					
@@ -1299,7 +1299,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 				case 'f':
 					// false?
 					if (! parser->expected & VKTOR_T_FALSE) {
-						vktor_error_set_unexpected_c(error, c);
+						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
 					
@@ -1309,7 +1309,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 				case 'n':
 					// null?
 					if (! parser->expected & VKTOR_T_NULL) {
-						vktor_error_set_unexpected_c(error, c);
+						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
 					
@@ -1331,7 +1331,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					// Read a number
 					if (! parser->expected & (VKTOR_T_INT | 
 					                          VKTOR_T_FLOAT)) {
-						vktor_error_set_unexpected_c(error, c);
+						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
 					
@@ -1340,7 +1340,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					
 				default:
 					// Unexpected character
-					vktor_error_set_unexpected_c(error, c);
+					set_error_unexpected_c(error, c);
 					return VKTOR_ERROR;
 					break;
 			}
@@ -1383,18 +1383,18 @@ vktor_get_depth(vktor_parser *parser)
 }
 
 /**
- * @brief Get the current container type
+ * @brief Get the current struct type
  * 
- * Get the container type (object, array or none) containing the current token
+ * Get the struct type (object, array or none) containing the current token
  * pointed to by the parser
  * 
  * @param [in] parser Parser object
  * 
- * @return A vktor_container value or VKTOR_CONTAINER_NONE if we are in the top 
+ * @return A vktor_struct value or VKTOR_STRUCT_NONE if we are in the top 
  *   level
  */
-vktor_container
-vktor_get_current_container(vktor_parser *parser)
+vktor_struct
+vktor_get_current_struct(vktor_parser *parser)
 {
 	assert(parser != NULL);
 	return parser->nest_stack[parser->nest_ptr];
@@ -1443,14 +1443,14 @@ vktor_get_value_long(vktor_parser *parser, vktor_error **error)
 	assert(parser != NULL);
 	
 	if (parser->token_value == NULL) {
-		vktor_error_set(error, VKTOR_ERR_NO_VALUE, "token value is unknown");
+		set_error(error, VKTOR_ERR_NO_VALUE, "token value is unknown");
 		return 0;
 	}
 	
 	errno = 0;
 	val = strtol((char *) parser->token_value, NULL, 10);
 	if (errno == ERANGE) {
-		vktor_error_set(error, VKTOR_ERR_OUT_OF_RANGE,
+		set_error(error, VKTOR_ERR_OUT_OF_RANGE,
 			"integer value overflows maximal long value");
 		return 0;
 	}
@@ -1483,14 +1483,14 @@ vktor_get_value_double(vktor_parser *parser, vktor_error **error)
 	assert(parser != NULL);
 	
 	if (parser->token_value == NULL) {
-		vktor_error_set(error, VKTOR_ERR_NO_VALUE, "token value is unknown");
+		set_error(error, VKTOR_ERR_NO_VALUE, "token value is unknown");
 		return 0;
 	}
 	
 	errno = 0;
 	val = strtod((char *) parser->token_value, NULL);
 	if (errno == ERANGE) {
-		vktor_error_set(error, VKTOR_ERR_OUT_OF_RANGE,
+		set_error(error, VKTOR_ERR_OUT_OF_RANGE,
 			"number value overflows maximal double value");
 		return 0;
 	}
@@ -1522,7 +1522,7 @@ vktor_get_value_str(vktor_parser *parser, char **val, vktor_error **error)
 	assert(parser != NULL);
 	
 	if (parser->token_value == NULL) {
-		vktor_error_set(error, VKTOR_ERR_NO_VALUE, "token value is unknown");
+		set_error(error, VKTOR_ERR_NO_VALUE, "token value is unknown");
 		return -1;
 	}
 	
@@ -1553,7 +1553,7 @@ vktor_get_value_str_copy(vktor_parser *parser, char **val, vktor_error **error)
 	assert(parser != NULL);
 	
 	if (parser->token_value == NULL) {
-		vktor_error_set(error, VKTOR_ERR_NO_VALUE, "token value is unknown");
+		set_error(error, VKTOR_ERR_NO_VALUE, "token value is unknown");
 		return 0;
 	}
 	
