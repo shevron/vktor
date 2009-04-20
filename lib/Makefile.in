@@ -83,7 +83,7 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(vktordir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libvktor_la_LIBADD =
-am_libvktor_la_OBJECTS = vktor.lo
+am_libvktor_la_OBJECTS = vktor.lo vktor_unicode.lo
 libvktor_la_OBJECTS = $(am_libvktor_la_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
@@ -240,7 +240,9 @@ top_srcdir = @top_srcdir@
 vktordir = $(includedir)/vktor
 vktor_HEADERS = vktor.h
 lib_LTLIBRARIES = libvktor.la
-libvktor_la_SOURCES = vktor.c
+libvktor_la_SOURCES = vktor.c \
+                      vktor_unicode.c
+
 AM_CFLAGS = $(DEPOS_CFLAGS) \
             $(VKTOR_CFLAGS)
 
@@ -314,6 +316,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vktor.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vktor_unicode.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

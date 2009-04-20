@@ -39,7 +39,6 @@
  */
 
 #include "config.h"
-#include "vktor.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,13 +47,17 @@
 #include <errno.h>
 #include <assert.h>
 
+#include "vktor.h"
+#include "vktor_unicode.h"
+
 /**
- * Maximal error string length (mostly for internal use)
+ * Maximal error string length (mostly for internal use). 
  */
 #define VKTOR_MAX_E_LEN 256
 
 /**
- * Memory allocation chunk size used when reading strings
+ * Memory allocation chunk size used when reading strings. Make sure it is 
+ * never below 4 which is the largent possible size of a Unicode character.
  */
 #ifndef VKTOR_STR_MEMCHUNK
 #define VKTOR_STR_MEMCHUNK 128
@@ -122,7 +125,7 @@
  * reading a token
  */
 #define check_reallocate_token_memory(cs)                              \
-	if ((ptr + 1) >= maxlen) {                                         \
+	if ((ptr + 5) >= maxlen) {                                         \
 		maxlen = maxlen + cs;                                          \
 		if ((token = realloc(token, maxlen * sizeof(char))) == NULL) { \
 			set_error(error, VKTOR_ERR_OUT_OF_MEMORY,                  \
@@ -131,17 +134,6 @@
 			return VKTOR_ERROR;                                        \
 		}                                                              \
 	}
-
-/**
- * Convenience macro for debugging messages. Only enabled if ENABLE_DEBUG is 
- * set and the VKTOR_DEBUG_LOG environment variable is defined.
- */
-//~ #ifdef ENABLE_DEBUG
-//~ #define DEBUG_LOG(m) if (getenv("VKTOR_DEBUG_LOG"))                   \
-		//~ fprintf(stderr, "DEBUG: %s at %s:%d\n", m, __FILE__, __LINE__)
-//~ #else
-//~ #define DEBUG_LOG(m)
-//~ #endif
 
 /**
  * Buffer struct, containing some text to parse along with an internal pointer
@@ -166,17 +158,17 @@ typedef struct _vktor_buffer_struct {
  * stream. 
  */
 struct _vktor_parser_struct {
-	vktor_buffer  *buffer;       /**< the current buffer being parsed */
-	vktor_buffer  *last_buffer;  /**< a pointer to the last buffer */
-	vktor_token    token_type;   /**< current token type */
-	void          *token_value;  /**< current token value, if any */
-	int            token_size;   /**< current token value length, if any */
-	char           token_resume; /**< current token is only half read */  
-	long           expected;     /**< bitmask of possible expected tokens */
-	vktor_struct  *nest_stack;   /**< array holding current nesting stack */
-	int            nest_ptr;     /**< pointer to the current nesting level */
-	int            max_nest;     /**< maximal nesting level */
-	long           unicode_c;    /**< temp container for unicode characters */
+	vktor_buffer   *buffer;       /**< the current buffer being parsed */
+	vktor_buffer   *last_buffer;  /**< a pointer to the last buffer */
+	vktor_token     token_type;   /**< current token type */
+	void           *token_value;  /**< current token value, if any */
+	int             token_size;   /**< current token value length, if any */
+	char            token_resume; /**< current token is only half read */  
+	long            expected;     /**< bitmask of possible expected tokens */
+	vktor_struct   *nest_stack;   /**< array holding current nesting stack */
+	int             nest_ptr;     /**< pointer to the current nesting level */
+	int             max_nest;     /**< maximal nesting level */
+	unsigned short  unicode_c;    /**< temp container for unicode characters */
 };
 
 /**
@@ -433,10 +425,11 @@ nest_stack_pop(vktor_parser *parser, vktor_error **error)
 static vktor_status
 parser_read_string(vktor_parser *parser, vktor_error **error)
 {
-	char  c;
+	char  c, l;
 	char *token;
-	int   ptr, maxlen;
+	int   ptr, maxlen, i;
 	int   done = 0;
+	char  utf8[5];
 	
 	assert(parser != NULL);
 	
@@ -532,28 +525,34 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 										   VKTOR_C_UNIC4)) {
 				
 				// Read an escaped unicode sequence
+				c = vktor_unicode_hex_to_int(c);
 				switch(parser->expected) {
+					
 					case VKTOR_C_UNIC1:
-						parser->unicode_c = c << 24;
+						parser->unicode_c = c << 12;
 						parser->expected = VKTOR_C_UNIC2;
 						break;
 						
 					case VKTOR_C_UNIC2:
-						parser->unicode_c = parser->unicode_c | (c << 16);
+						parser->unicode_c = parser->unicode_c | (c << 8);
 						parser->expected = VKTOR_C_UNIC3;
 						break;
 						
 					case VKTOR_C_UNIC3:
-						parser->unicode_c = parser->unicode_c | (c << 8);
+						parser->unicode_c = parser->unicode_c | (c << 4);
 						parser->expected = VKTOR_C_UNIC4;
 						break;
 						
-					case VKTOR_C_UNIC4:
+					case VKTOR_C_UNIC4:			
 						parser->unicode_c = parser->unicode_c | c;
 						parser->expected = parser->expected = VKTOR_T_STRING;
-						// Get the character as UTF8
 						
-						token[ptr++] = '?';
+						// Get the character as UTF8 and add it to the string
+						l = vktor_unicode_cp_to_utf8(parser->unicode_c, &utf8);
+						for (i = 0; i < l; i++) {
+							if (utf8[i] == '\0') break;
+							token[ptr++] = utf8[i];
+						}
 						check_reallocate_token_memory(VKTOR_STR_MEMCHUNK);
 						break;
 						
@@ -584,7 +583,13 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 					default:
 						/**
 						 * @todo deal with invalid control characters
-						 */						
+						 */
+						// Unicode control characters must be escaped
+						if (c >= 0 && c <= 0x1f) {
+							set_error_unexpected_c(error, c);
+							return VKTOR_ERROR;
+						}
+						
 						token[ptr++] = c;
 						check_reallocate_token_memory(VKTOR_STR_MEMCHUNK);
 						break;
@@ -1314,6 +1319,8 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 				case '\n':
 				case '\r':
 				case '\t':
+				case '\f':
+				case '\v':
 					// Whitespace - do nothing!
 					/** 
 					 * @todo consinder: read all whitespace without looping? 

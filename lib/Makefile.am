@@ -30,7 +30,9 @@
 vktordir = $(includedir)/vktor
 vktor_HEADERS = vktor.h
 lib_LTLIBRARIES = libvktor.la
-libvktor_la_SOURCES = vktor.c
+
+libvktor_la_SOURCES = vktor.c \
+                      vktor_unicode.c
 
 AM_CFLAGS = $(DEPOS_CFLAGS) \
             $(VKTOR_CFLAGS)

@@ -30,7 +30,6 @@
  * 
  * vktor header file - defines the external API and types available to vktor
  * users. 
- * 
  */
 
 #ifndef _VKTOR_H
