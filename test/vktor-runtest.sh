@@ -76,17 +76,21 @@ SKIP_RETVAL=0
 
 # load the test file
 source $TESTFILE
+if test $? -ne 0; then
+	echo "ERR: unable to properly parse test file $TESTFILE" >&2
+	exit 204
+fi
 
 # make sure test program is executable
 if test ! -x "$TEST_PROG"; then
 	echo "ERR: test program '$TEST_PROG' is not executable" >&2
-	exit 204
+	exit 205
 fi
 
 # make sure test has a name
 if test -z "$TEST_NAME"; then
 	echo "ERR: test defined in $TESTFILE has no name" >&2
-	exit 205
+	exit 206
 fi
 
 # run the test

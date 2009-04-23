@@ -8,10 +8,7 @@ TEST_PROG=vktor-json2yaml
 TEST_STDIN='"קַמְרָשָׁהלוּרָ\"ל"'
 
 # Expected output
-TEST_STDOUT=$(cat <<ENDOFTEXT
-"קַמְרָשָׁהלוּרָ"ל"
-ENDOFTEXT
-)
+TEST_STDOUT=$'"קַמְרָשָׁהלוּרָ\x22ל"'
 
 # No need to test standard error output
 SKIP_STDERR=1

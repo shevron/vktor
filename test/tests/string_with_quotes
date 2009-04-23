@@ -5,7 +5,10 @@
 TEST_PROG=vktor-json2yaml
 
 # Test input
-TEST_STDIN='"Hello, \"wonderful\" world! \\o\/"'
+TEST_STDIN=$(cat <<ENDOFTEXT
+"Hello, \"wonderful\" world! \\\\o/"
+ENDOFTEXT
+)
 
 # Expected output
 TEST_STDOUT=$(cat <<ENDOFTEXT
