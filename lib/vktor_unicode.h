@@ -35,6 +35,15 @@
  * @internal
  */
 
+/**
+ * Convenience macro to check if a codepoint is a high surrogate
+ */
+#define VKTOR_UNICODE_HIGH_SURROGATE(cp) (cp >= 0xd800 && cp <= 0xdbff)
+
+/**
+ * Convenience macro to check if a codepoint is a low surrogate
+ */
+#define VKTOR_UNICODE_LOW_SURROGATE(cp) (cp >= 0xdc99 && cp <= 0xdfff)
 
 /**
  * @brief Convert a hexadecimal digit to it's integer value
@@ -50,7 +59,7 @@
  * 
  * @return Integer value (0 - 15). 
  */
-char vktor_unicode_hex_to_int(char hex);
+unsigned char vktor_unicode_hex_to_int(unsigned char hex);
 
 /**
  * @brief Encode a Unicode code point to a UTF-8 string
@@ -66,7 +75,7 @@ char vktor_unicode_hex_to_int(char hex);
  * 
  * @return the length of the UTF-8 string (1 - 4 bytes) or 0 in case of error
  */
-vktor_unicode_cp_to_utf8(unsigned short cp, char *utf8);
+int vktor_unicode_cp_to_utf8(unsigned short cp, unsigned char *utf8);
 
 #define _VKTOR_UNICODE_H
 #endif

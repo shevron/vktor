@@ -6,7 +6,7 @@ TEST_PROG=vktor-json2yaml
 
 # Test input
 TEST_STDIN=$(cat <<ENDOFTEXT
-["\u05de\u05e8","\u05d7\u05e1\u05d5\u05df","\u05d1\u05e6\u05d5\u05e8\u05ea","\u05e9\u05d5\u05e4\u05dc"]
+["\u05de\u05e8","\u05d7\u05e1\u05d5\u05df","\u05d1\u05e6\u05d5\u05e8\u05ea","\u05e9\u05d5\u05e4\u05dc", "\u20ac"]
 ENDOFTEXT
 )
 
@@ -16,6 +16,7 @@ TEST_STDOUT=$(cat <<ENDOFTEXT
 - "חסון"
 - "בצורת"
 - "שופל"
+- "€"
 ENDOFTEXT
 )
 

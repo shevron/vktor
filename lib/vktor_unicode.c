@@ -46,10 +46,10 @@
  * 
  * @return Integer value (0 - 15). 
  */
-char
-vktor_unicode_hex_to_int(char hex)
+unsigned char
+vktor_unicode_hex_to_int(unsigned char hex)
 {
-	char i = 0;
+	unsigned char i = 0;
 	
 	assert((hex >= '0' && hex <= '9') || 
 	       (hex >= 'a' && hex <= 'f') ||
@@ -69,10 +69,10 @@ vktor_unicode_hex_to_int(char hex)
 /**
  * @brief Encode a Unicode code point to a UTF-8 string
  * 
- * Encode a 32 bit number representing a Unicode code point (UCS-4 assumed) to 
+ * Encode a 32 bit number representing a Unicode code point (UCS-2) to 
  * a UTF-8 encoded string. 
  * 
- * Conversion method is according to http://www.ietf.org/rfc/rfc2279.txt
+ * Based on example from http://www.unicode.org/Public/PROGRAMS/CVTUTF/
  * 
  * @param [in]  cp    the unicode codepoint
  * @param [out] utf8  a pointer to a 5 byte long string (at least) that will 
@@ -81,42 +81,29 @@ vktor_unicode_hex_to_int(char hex)
  * @return the length of the UTF-8 string (1 - 4 bytes) or 0 in case of error
  */
 int
-vktor_unicode_cp_to_utf8(unsigned short cp, char *utf8) 
+vktor_unicode_cp_to_utf8(unsigned short cp, unsigned char *utf8) 
 {
-	int   len = 0;
+	int len = 0;
 	
 	assert(sizeof(utf8) >= 4);
 	
 	if (cp <= 0x7f) {
 		// 1 byte UTF-8, equivalent to ASCII
-		utf8[0] = (char) cp;
+		utf8[0] = (unsigned char) cp;
 		len  = 1;
 		
 	} else if (cp <= 0x7ff) {
 		// 2 byte UTF-8
-		utf8[1] = (char) cp & 0xbf;
-		utf8[0] = (char) cp >> 4 & 0xdf;
+		utf8[0] = 0xc0 | (cp >> 6);
+		utf8[1] = 0x80 | (cp & 0x3f);
 		len = 2;
 		
-	} else if (cp <= 0xffff) {
+	} else {
 		// 3 byte UTF-8
-		utf8[0] = (char) cp >> 16 & 0xef;
-		utf8[1] = (char) cp >> 8  & 0xbf;
-		utf8[2] = (char) cp & 0xbf;
-		len = 3;
-		
-	} else if (cp <= 0x1fffff) {
-		// 4 byte UTF-8
-		utf8[0] = (char) cp & 0xbf;
-		utf8[1] = (char) cp >> 4  & 0xbf;
-		utf8[2] = (char) cp >> 8  & 0xbf;
-		utf8[3] = (char) cp >> 12 & 0xf7;
-		len = 4;
-		
-	} else if (cp <= 0x3ffffff) {
-		fprintf(stderr, "NOT YET SUPPORTED");
-	} else if (cp <= 0x7fffffff) {
-		fprintf(stderr, "NOT YET SUPPORTED");
+		utf8[0] = (unsigned char) 0xe0 | (cp >> 12);
+		utf8[1] = (unsigned char) 0x80 | ((cp >> 6) & 0x3f);
+		utf8[2] = (unsigned char) 0x80 | (cp & 0x3f);
+		len = 3;	
 	}
 	
 	utf8[len] = '\0';

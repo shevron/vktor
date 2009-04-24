@@ -525,7 +525,7 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 										   VKTOR_C_UNIC4)) {
 				
 				// Read an escaped unicode sequence
-				c = vktor_unicode_hex_to_int(c);
+				c = vktor_unicode_hex_to_int((unsigned char) c);
 				switch(parser->expected) {
 					
 					case VKTOR_C_UNIC1:
@@ -547,10 +547,16 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 						parser->unicode_c = parser->unicode_c | c;
 						parser->expected = parser->expected = VKTOR_T_STRING;
 						
+						if (VKTOR_UNICODE_HIGH_SURROGATE(parser->unicode_c)) {
+							// note supported yet
+							set_error(error, VKTOR_ERR_INTERNAL_ERR, 
+								"Unicode Surrogate Pairs are not yet supported");
+							return VKTOR_ERROR;
+						}
+						
 						// Get the character as UTF8 and add it to the string
-						l = vktor_unicode_cp_to_utf8(parser->unicode_c, &utf8);
+						l = vktor_unicode_cp_to_utf8(parser->unicode_c, utf8);
 						for (i = 0; i < l; i++) {
-							if (utf8[i] == '\0') break;
 							token[ptr++] = utf8[i];
 						}
 						check_reallocate_token_memory(VKTOR_STR_MEMCHUNK);
@@ -563,7 +569,7 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 						break;
 				}
 				
-			} else {			
+			} else {
 				switch (c) {
 					case '"':
 						// end of string;
