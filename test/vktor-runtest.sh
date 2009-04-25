@@ -130,5 +130,7 @@ if test $SKIP_STDERR -eq 0; then
 fi
 
 # All is OK - clean up and exit 0
-rm -f $OUTDIR/$TEST_NAME.std*
+if test ! -n "$NOCLEAN"; then
+	rm -f $OUTDIR/$TEST_NAME.std*
+fi
 exit 0
