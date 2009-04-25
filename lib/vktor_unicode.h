@@ -64,18 +64,33 @@ unsigned char vktor_unicode_hex_to_int(unsigned char hex);
 /**
  * @brief Encode a Unicode code point to a UTF-8 string
  * 
- * Encode a 32 bit number representing a Unicode code point (UCS-4 assumed) to 
- * a UTF-8 encoded string. 
- * 
- * Conversion method is according to http://www.ietf.org/rfc/rfc2279.txt
+ * Encode a 16 bit number representing a Unicode code point (UCS-2) to 
+ * a UTF-8 encoded string. Note that this function does not handle surrogate
+ * pairs - you should use vktor_uncode_sp_to_utf8() in this case.
  * 
  * @param [in]  cp    the unicode codepoint
  * @param [out] utf8  a pointer to a 5 byte long string (at least) that will 
  *   be populated with the UTF-8 encoded string
  * 
- * @return the length of the UTF-8 string (1 - 4 bytes) or 0 in case of error
+ * @return the length of the UTF-8 string (1 - 3 bytes) or 0 in case of error
  */
-int vktor_unicode_cp_to_utf8(unsigned short cp, unsigned char *utf8);
+short vktor_unicode_cp_to_utf8(unsigned short cp, unsigned char *utf8);
+
+/**
+ * @brief Convert a UTF-16 surrogate pair to a UTF-8 character
+ *
+ * Converts a UTF-16 surrogate pair (two 16 bit characters) into a single 4-byte
+ * UTF-8 character. This function should be called only after checking that
+ * you have a valid surrogate pair.
+ *
+ * @param [in]  high High surrogate
+ * @param [in]  low  Low  surrogate
+ * @param [out] utf8 Resulting UTF-8 character
+ *
+ * @return Byte-length of resulting character - should be 4, or 0 if there's an
+ *   error.
+ */
+short vktor_unicode_sp_to_utf8(unsigned short high, unsigned short low, unsigned char *utf8);
 
 #define _VKTOR_UNICODE_H
 #endif

@@ -15,7 +15,8 @@ TEST_STDIN=$(cat <<ENDOFTEXT
   ],
   "ComplexUnicode" : [
     "\u20ac\u0024", 
-    "\u6c34\u007a\ud834\udd1e"
+    "\u6c34\u007a",
+    "\ud834\udd1e\ud834\udd22\u266d\u266e\u266f\ud834\udd2a"
   ]
 }
 ENDOFTEXT
@@ -23,14 +24,15 @@ ENDOFTEXT
 
 # Expected output
 TEST_STDOUT=$(cat <<ENDOFTEXT
-"HebrewText":
+"HebrewText": 
   - "מר"
   - "חסון"
   - "בצורת"
-- "שופל"
-"ComplexUnicode":
+  - "שופל"
+"ComplexUnicode": 
   - "€$"
-  - "水z𝄞"
+  - "水z"
+  - "𝄞𝄢♭♮♯𝄪"
 ENDOFTEXT
 )
 

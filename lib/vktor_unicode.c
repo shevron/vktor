@@ -32,6 +32,8 @@
 
 #include "vktor_unicode.h"
 
+#define SURROGATE_OFFSET (0x10000 - (0xd800 << 10) - 0xdc00)
+
 /**
  * @brief Convert a hexadecimal digit to it's integer value
  * 
@@ -69,23 +71,23 @@ vktor_unicode_hex_to_int(unsigned char hex)
 /**
  * @brief Encode a Unicode code point to a UTF-8 string
  * 
- * Encode a 32 bit number representing a Unicode code point (UCS-2) to 
- * a UTF-8 encoded string. 
- * 
- * Based on example from http://www.unicode.org/Public/PROGRAMS/CVTUTF/
+ * Encode a 16 bit number representing a Unicode code point (UCS-2) to 
+ * a UTF-8 encoded string. Note that this function does not handle surrogate
+ * pairs - you should use vktor_uncode_sp_to_utf8() in this case.
  * 
  * @param [in]  cp    the unicode codepoint
  * @param [out] utf8  a pointer to a 5 byte long string (at least) that will 
  *   be populated with the UTF-8 encoded string
  * 
- * @return the length of the UTF-8 string (1 - 4 bytes) or 0 in case of error
+ * @return the length of the UTF-8 string (1 - 3 bytes) or 0 in case of error
  */
-int
+short
 vktor_unicode_cp_to_utf8(unsigned short cp, unsigned char *utf8) 
 {
-	int len = 0;
+	short len = 0;
 	
 	assert(sizeof(utf8) >= 4);
+	assert(! VKTOR_UNICODE_HIGH_SURROGATE(cp));
 	
 	if (cp <= 0x7f) {
 		// 1 byte UTF-8, equivalent to ASCII
@@ -97,16 +99,55 @@ vktor_unicode_cp_to_utf8(unsigned short cp, unsigned char *utf8)
 		utf8[0] = 0xc0 | (cp >> 6);
 		utf8[1] = 0x80 | (cp & 0x3f);
 		len = 2;
+	} else if (VKTOR_UNICODE_LOW_SURROGATE(cp)) {
+		// Error - an unpaired low surrogate character
+		return 0;
 		
 	} else {
 		// 3 byte UTF-8
 		utf8[0] = (unsigned char) 0xe0 | (cp >> 12);
 		utf8[1] = (unsigned char) 0x80 | ((cp >> 6) & 0x3f);
 		utf8[2] = (unsigned char) 0x80 | (cp & 0x3f);
-		len = 3;	
+		len = 3;
 	}
 	
 	utf8[len] = '\0';
 	
 	return len;
+}
+
+/**
+ * @brief Convert a UTF-16 surrogate pair to a UTF-8 character
+ *
+ * Converts a UTF-16 surrogate pair (two 16 bit characters) into a single 4-byte
+ * UTF-8 character. This function should be called only after checking that
+ * you have a valid surrogate pair.
+ *
+ * @param [in]  high High surrogate
+ * @param [in]  low  Low  surrogate
+ * @param [out] utf8 Resulting UTF-8 character
+ *
+ * @return Byte-length of resulting character - should be 4, or 0 if there's an
+ *   error.
+ */
+short
+vktor_unicode_sp_to_utf8(unsigned short high, unsigned short low, unsigned char *utf8)
+{
+	unsigned long utf32;
+	
+	assert(sizeof(utf8) >= 4);
+	assert(VKTOR_UNICODE_HIGH_SURROGATE(high));
+	assert(VKTOR_UNICODE_LOW_SURROGATE(low));
+	
+	// First, convert the UTF-16 surrogate pair into a single UTF32 character
+	utf32 = (high << 10) + low + SURROGATE_OFFSET;
+	
+	// Now write the UTF-8 encoded character 
+	utf8[0] = (unsigned char) 0xf0 | (utf32 >> 18); 
+	utf8[1] = (unsigned char) 0x80 | ((utf32 >> 12) & 0x3f);
+	utf8[2] = (unsigned char) 0x80 | ((utf32 >> 6) & 0x3f);
+	utf8[3] = (unsigned char) 0x80 | (utf32 & 0x3f);
+	utf8[4] = '\0';
+	
+	return 4;
 }

@@ -168,7 +168,7 @@ struct _vktor_parser_struct {
 	vktor_struct   *nest_stack;   /**< array holding current nesting stack */
 	int             nest_ptr;     /**< pointer to the current nesting level */
 	int             max_nest;     /**< maximal nesting level */
-	unsigned short  unicode_c;    /**< temp container for unicode characters */
+	unsigned long   unicode_c;    /**< temp container for unicode characters */
 };
 
 /**
@@ -188,6 +188,7 @@ typedef enum {
 	VKTOR_C_UNIC2   = 1 << 23, /**< Unicode encoded character (2nd byte) */
 	VKTOR_C_UNIC3   = 1 << 24, /**< Unicode encoded character (3rd byte) */
 	VKTOR_C_UNIC4   = 1 << 25, /**< Unicode encoded character (4th byte) */
+	VKTOR_C_UNIC_LS = 1 << 26, /**< Unicode low surrogate */
 } vktor_specialchar;
 
 /**
@@ -425,11 +426,10 @@ nest_stack_pop(vktor_parser *parser, vktor_error **error)
 static vktor_status
 parser_read_string(vktor_parser *parser, vktor_error **error)
 {
-	char  c, l;
-	char *token;
-	int   ptr, maxlen, i;
-	int   done = 0;
-	char  utf8[5];
+	char           c;
+	char          *token;
+	int            ptr, maxlen;
+	int            done = 0;
 	
 	assert(parser != NULL);
 	
@@ -529,7 +529,7 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 				switch(parser->expected) {
 					
 					case VKTOR_C_UNIC1:
-						parser->unicode_c = c << 12;
+						parser->unicode_c = parser->unicode_c | (c << 12);
 						parser->expected = VKTOR_C_UNIC2;
 						break;
 						
@@ -543,28 +543,86 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 						parser->expected = VKTOR_C_UNIC4;
 						break;
 						
-					case VKTOR_C_UNIC4:			
+					case VKTOR_C_UNIC4: 
 						parser->unicode_c = parser->unicode_c | c;
 						parser->expected = parser->expected = VKTOR_T_STRING;
 						
 						if (VKTOR_UNICODE_HIGH_SURROGATE(parser->unicode_c)) {
-							// note supported yet
-							set_error(error, VKTOR_ERR_INTERNAL_ERR, 
-								"Unicode Surrogate Pairs are not yet supported");
-							return VKTOR_ERROR;
+							// Expecting a low surrogate
+							parser->unicode_c <<= 16;
+							parser->expected = VKTOR_C_UNIC_LS;
+							
+						} else if(parser->unicode_c > 0xffff) {
+							// Found the low surrogate pair?
+							if (! VKTOR_UNICODE_LOW_SURROGATE((parser->unicode_c & 0x0000ffff))) {
+								// invalid low surrogate
+								set_error_unexpected_c(error, c);
+								return VKTOR_ERROR;
+								
+							}
+							
+							// Convert surrogate pair to UTF-8
+							unsigned char utf8[5];
+							short         l, i;
+							
+							l = vktor_unicode_sp_to_utf8(
+									(unsigned short) (parser->unicode_c >> 16),
+									(unsigned short) parser->unicode_c,
+									utf8);
+							if (l == 0) {
+								// invalid surrogate pair
+								set_error_unexpected_c(error, c);
+								return VKTOR_ERROR;
+							}
+							                         
+							for (i = 0; i < l; i++) {
+								token[ptr++] = utf8[i];
+							}
+							check_reallocate_token_memory(VKTOR_STR_MEMCHUNK);
+							parser->unicode_c = 0;
+							parser->expected = VKTOR_T_STRING;
+
+						} else {
+							unsigned char utf8[4];
+							short         l, i;
+							
+							// Get the character as UTF8 and add it to the string
+							l = vktor_unicode_cp_to_utf8((unsigned short) parser->unicode_c, utf8);
+							if (l == 0) {
+								// invalid Unicode character
+								set_error_unexpected_c(error, c);
+								return VKTOR_ERROR;
+							}
+							
+							for (i = 0; i < l; i++) {
+								token[ptr++] = utf8[i];
+							}
+							check_reallocate_token_memory(VKTOR_STR_MEMCHUNK);
+							parser->unicode_c = 0;
+							parser->expected = VKTOR_T_STRING;
 						}
 						
-						// Get the character as UTF8 and add it to the string
-						l = vktor_unicode_cp_to_utf8(parser->unicode_c, utf8);
-						for (i = 0; i < l; i++) {
-							token[ptr++] = utf8[i];
-						}
-						check_reallocate_token_memory(VKTOR_STR_MEMCHUNK);
 						break;
 						
 					default: // should not happen
 						set_error(error, VKTOR_ERR_INTERNAL_ERR, 
 							"internal parser error: expecing a Unicode sequence character");
+						return VKTOR_ERROR;
+						break;
+				}
+			
+			} else if (parser->expected == VKTOR_C_UNIC_LS) {
+				// Expecting another unicode character
+				switch(c) {
+					case '\\':
+						break;
+						
+					case 'u':
+						parser->expected = VKTOR_C_UNIC1;
+						break;
+					
+					default:
+						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 						break;
 				}
@@ -587,9 +645,12 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 						break;
 						
 					default:
-						/**
-						 * @todo deal with invalid control characters
-						 */
+						// Are we expecting a regular char?
+						if (! (parser->expected & VKTOR_T_STRING)) {
+							set_error_unexpected_c(error, c);
+							return VKTOR_ERROR;
+						}
+						
 						// Unicode control characters must be escaped
 						if (c >= 0 && c <= 0x1f) {
 							set_error_unexpected_c(error, c);
@@ -1251,8 +1312,6 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 							return VKTOR_ERROR;
 							break;
 					}
-					
-					//~ printf(",");
 					break;
 				
 				case ':':
