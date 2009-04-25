@@ -94,7 +94,7 @@ if test -z "$TEST_NAME"; then
 fi
 
 # run the test
-echo $TEST_STDIN > $OUTDIR/$TEST_NAME.stdin
+echo "$TEST_STDIN" > $OUTDIR/$TEST_NAME.stdin
 
 $CWD/$TEST_PROG  < $OUTDIR/$TEST_NAME.stdin  \
                  > $OUTDIR/$TEST_NAME.stdout \
