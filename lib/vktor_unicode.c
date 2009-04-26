@@ -44,7 +44,7 @@
  * internal use only. If the character is not a valid hex digit, 0 is returned. 
  * Obviously since 0 is a valid value it should not be used for error checking.
  * 
- * @param [in] char Hexadecimal character
+ * @param [in] hex Hexadecimal character
  * 
  * @return Integer value (0 - 15). 
  */

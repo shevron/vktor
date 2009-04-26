@@ -25,14 +25,19 @@
  * OTHER DEALINGS IN THE SOFTWARE. 
  */
 
-#ifndef _VKTOR_UNICODE_H
-
 /**
  * @file vktor_unicode.h
  * 
  * vktor Unicode header file - Unicode related functions
  * 
  * @internal
+ */
+
+#ifndef _VKTOR_UNICODE_H
+
+/**
+ * @ingroup internal
+ * @{
  */
 
 /**
@@ -55,7 +60,7 @@
  * internal use only. If the character is not a valid hex digit, 0 is returned. 
  * Obviously since 0 is a valid value it should not be used for error checking.
  * 
- * @param [in] char Hexadecimal character
+ * @param [in] hex Hexadecimal character
  * 
  * @return Integer value (0 - 15). 
  */
@@ -92,5 +97,7 @@ short vktor_unicode_cp_to_utf8(unsigned short cp, unsigned char *utf8);
  */
 short vktor_unicode_sp_to_utf8(unsigned short high, unsigned short low, unsigned char *utf8);
 
+/** @} */ // end of internal API
+
 #define _VKTOR_UNICODE_H
-#endif
+#endif /* VKTOR_UNICODE_H */
