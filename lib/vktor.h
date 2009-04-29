@@ -57,18 +57,18 @@ typedef struct _vktor_parser_struct vktor_parser;
  * type.
  */
 typedef enum {
-	VKTOR_T_NONE         =  0,
-	VKTOR_T_NULL         =  1,
-	VKTOR_T_FALSE        =  1 << 1,
-	VKTOR_T_TRUE         =  1 << 2,
-	VKTOR_T_INT          =  1 << 3,
-	VKTOR_T_FLOAT        =  1 << 4,
-	VKTOR_T_STRING       =  1 << 5,
-	VKTOR_T_ARRAY_START  =  1 << 6,
-	VKTOR_T_ARRAY_END    =  1 << 7,
-	VKTOR_T_OBJECT_START =  1 << 8,
-	VKTOR_T_OBJECT_KEY   =  1 << 9,
-	VKTOR_T_OBJECT_END   =  1 << 10,
+	VKTOR_T_NONE         =  0,       /**< No token */
+	VKTOR_T_NULL         =  1,       /**< null */
+	VKTOR_T_FALSE        =  1 << 1,  /**< boolean false */
+	VKTOR_T_TRUE         =  1 << 2,  /**< boolean true */
+	VKTOR_T_INT          =  1 << 3,  /**< an integer value */
+	VKTOR_T_FLOAT        =  1 << 4,  /**< a floating-point value */
+	VKTOR_T_STRING       =  1 << 5,  /**< a string value */
+	VKTOR_T_ARRAY_START  =  1 << 6,  /**< array beginning */
+	VKTOR_T_ARRAY_END    =  1 << 7,  /**< array end */
+	VKTOR_T_OBJECT_START =  1 << 8,  /**< object beginning */
+	VKTOR_T_OBJECT_KEY   =  1 << 9,  /**< an object pair key */
+	VKTOR_T_OBJECT_END   =  1 << 10, /**< object end */
 } vktor_token;
 
 /**
