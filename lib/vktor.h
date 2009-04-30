@@ -164,6 +164,7 @@ void vktor_error_free(vktor_error *err);
  * @param [in] parser   parser object
  * @param [in] text     text to add to buffer
  * @param [in] text_len length of text to add to buffer
+ * @param [in] free     whether to free the buffer when done (1) or not (0)
  * @param [in,out] err  pointer to an unallocated error struct to return any 
  *                      errors, or NULL if there is no need for error handling
  * 
@@ -172,7 +173,7 @@ void vktor_error_free(vktor_error *err);
  *  - VKTOR_ERROR otherwise
  */
 vktor_status vktor_feed(vktor_parser *parser, char *text, long text_len, 
-                        vktor_error **err);
+                        char free, vktor_error **err);
 
 /**
  * @brief Parse some JSON text and return on the next token

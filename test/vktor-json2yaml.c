@@ -241,7 +241,7 @@ main(int argc, char *argv[], char *envp[])
 				buffer = malloc(sizeof(char) * buffsize);
 				read_bytes = fread(buffer, sizeof(char), buffsize, stdin);
 				if (read_bytes) {
-					vktor_feed(parser, buffer, read_bytes, &error);
+					vktor_feed(parser, buffer, read_bytes, 1, &error);
 					
 				} else {
 					// Nothing left to read
