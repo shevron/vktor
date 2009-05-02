@@ -1,0 +1,21 @@
+# Test that we get an error when numbers are used as object keys
+# Shahar Evron, 2009-05-02
+
+# Test program
+TEST_PROG=vktor-json2yaml
+
+# Test input
+TEST_STDIN=$(cat <<ENDOFTEXT
+{ 2: "value" }
+ENDOFTEXT
+)
+
+# Expecting no output
+SKIP_STDOUT=1
+
+# Expected error
+TEST_STDERR="Paser error [2]: Unexpected character in input: '2' (0x32)"
+
+# Expected program return code
+TEST_RETVAL=2
+
