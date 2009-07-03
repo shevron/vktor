@@ -1,0 +1,21 @@
+# Test from http://www.json.org/JSON_checker/
+# Shahar Evron, 2009-07-03
+
+# Test program
+TEST_PROG=vktor-validate
+
+# Test input
+TEST_STDIN=$(cat <<ENDOFTEXT
+["Unclosed array"
+ENDOFTEXT
+)
+
+# Don't test STDOUT
+SKIP_STDOUT=1
+
+# No need to test standard error output
+SKIP_STDERR=1
+
+# Expected program return code - parse error
+TEST_RETVAL=2
+
