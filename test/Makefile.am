@@ -27,9 +27,11 @@
 
 # vktor test programs automake Makefile template
 
-check_PROGRAMS = vktor-json2yaml
+check_PROGRAMS = vktor-json2yaml \
+                 vktor-validate
 
 vktor_json2yaml_SOURCES = vktor-json2yaml.c
+vktor_validate_SOURCES = vktor-validate.c
 
 AM_CFLAGS = $(VKTOR_CFLAGS)
 AM_CPPFLAGS = -I$(top_srcdir)/lib
