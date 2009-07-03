@@ -49,25 +49,32 @@
 #include <vktor.h>
 
 #define DEFAULT_BUFFSIZE 4096
+#define DEFAULT_MAXDEPTH 32
 
 int 
 main(int argc, char *argv[], char *envp[]) 
 {
-	vktor_parser    *parser;
-	vktor_status     status;
-	vktor_error     *error = NULL;
-	char            *buffer;
-	size_t           read_bytes;
-	int              done = 0, ret = 0;
-	char            *buffsize_c;
-	int              buffsize = DEFAULT_BUFFSIZE;
+	vktor_parser *parser;
+	vktor_status  status;
+	vktor_error  *error = NULL;
+	char         *buffer;
+	size_t        read_bytes;
+	int           done = 0, ret = 0;
+	char         *envvar;
+	int           buffsize = DEFAULT_BUFFSIZE;
+	int           maxdepth = DEFAULT_MAXDEPTH;
 	
-	// Set buffer size from environment, if set
-	if ((buffsize_c = getenv("BUFFSIZE")) != NULL) {
-		buffsize = atoi(buffsize_c);
+	/* Set buffer size from environment, if set */
+	if ((envvar = getenv("BUFFSIZE")) != NULL) {
+		buffsize = atoi(envvar);
 	}
 	
-	parser = vktor_parser_init(128);
+	/* Set max depth from environment, if set */
+	if ((envvar = getenv("MAXDEPTH")) != NULL) {
+		maxdepth = atoi(envvar);
+	}
+
+	parser = vktor_parser_init(maxdepth);
 	
 	do {
 		status = vktor_parse(parser, &error);
