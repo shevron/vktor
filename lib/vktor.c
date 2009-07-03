@@ -1301,7 +1301,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					break;
 				
 				case ',':
-					if (! parser->expected & VKTOR_C_COMMA) {
+					if (! (parser->expected & VKTOR_C_COMMA)) {
 						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
