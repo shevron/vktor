@@ -19,6 +19,6 @@ SKIP_STDOUT=1
 # No need to test standard error output
 SKIP_STDERR=1
 
-# Expected program return code - parse error
+# Expected program return code - max depth reached
 TEST_RETVAL=6
 
