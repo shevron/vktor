@@ -6,7 +6,7 @@ TEST_PROG=vktor-validate
 
 # Test input
 TEST_STDIN=$(cat <<ENDOFTEXT
-["line\
+["line\\
 break"]
 ENDOFTEXT
 )
