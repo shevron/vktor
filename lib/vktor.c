@@ -1284,8 +1284,8 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					break;
 					
 				case '"':
-					if (! parser->expected & (VKTOR_T_STRING | 
-					                          VKTOR_T_OBJECT_KEY)) {
+					if (! (parser->expected & (VKTOR_T_STRING | 
+					                           VKTOR_T_OBJECT_KEY))) {
 						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
@@ -1403,7 +1403,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					
 				case 't':
 					// true?
-					if (! parser->expected & VKTOR_T_TRUE) {
+					if (! (parser->expected & VKTOR_T_TRUE)) {
 						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
@@ -1413,7 +1413,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					
 				case 'f':
 					// false?
-					if (! parser->expected & VKTOR_T_FALSE) {
+					if (! (parser->expected & VKTOR_T_FALSE)) {
 						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
@@ -1423,7 +1423,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 
 				case 'n':
 					// null?
-					if (! parser->expected & VKTOR_T_NULL) {
+					if (! (parser->expected & VKTOR_T_NULL)) {
 						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
