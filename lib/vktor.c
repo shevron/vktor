@@ -80,21 +80,21 @@
 /**
  * Convenience macro to set an 'unexpected character' error
  */
-#define set_error_unexpected_c(e, c)         \
+#define set_error_unexpected_c(e, c)             \
 	set_error(e, VKTOR_ERR_UNEXPECTED_INPUT, \
 		"Unexpected character in input: '%c' (0x%02hhx)", c, c)
 
 /**
  * A bitmask representing any 'value' token 
  */
-#define VKTOR_VALUE_TOKEN VKTOR_T_NULL        | \
-                          VKTOR_T_FALSE       | \
-						  VKTOR_T_TRUE        | \
-						  VKTOR_T_INT         | \
-						  VKTOR_T_FLOAT       | \
-						  VKTOR_T_STRING      | \
-						  VKTOR_T_ARRAY_START | \
-						  VKTOR_T_OBJECT_START
+#define VKTOR_VALUE_TOKEN VKTOR_T_NULL         | \
+                          VKTOR_T_FALSE        | \
+                          VKTOR_T_TRUE         | \
+                          VKTOR_T_INT          | \
+                          VKTOR_T_FLOAT        | \
+                          VKTOR_T_STRING       | \
+                          VKTOR_T_ARRAY_START  | \
+                          VKTOR_T_OBJECT_START
 
 /**
  * Convenience macro to check if we are in a specific type of JSON struct
@@ -105,21 +105,21 @@
  * Convenience macro to easily set the expected next token map after a value
  * token, taking current struct struct (if any) into account.
  */
-#define expect_next_value_token(p)              \
-	switch(p->nest_stack[p->nest_ptr]) {        \
-		case VKTOR_STRUCT_OBJECT:               \
-			p->expected = VKTOR_C_COMMA |       \
-							VKTOR_T_OBJECT_END; \
-			break;                              \
-												\
-		case VKTOR_STRUCT_ARRAY:                \
-			p->expected = VKTOR_C_COMMA |       \
-							VKTOR_T_ARRAY_END;  \
-			break;                              \
-												\
-		default:                                \
-			p->expected = VKTOR_T_NONE;         \
-			break;                              \
+#define expect_next_value_token(p)                        \
+	switch(p->nest_stack[p->nest_ptr]) {              \
+		case VKTOR_STRUCT_OBJECT:                 \
+			p->expected = VKTOR_C_COMMA |     \
+			              VKTOR_T_OBJECT_END; \
+			break;                            \
+			                                  \
+		case VKTOR_STRUCT_ARRAY:                  \
+			p->expected = VKTOR_C_COMMA |     \
+			              VKTOR_T_ARRAY_END;  \
+			break;                            \
+			                                  \
+		default:                                  \
+			p->expected = VKTOR_T_NONE;       \
+			break;                            \
 	}
 
 /**
@@ -1278,7 +1278,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					
 					// Expecting: any value or array end
 					parser->expected = VKTOR_VALUE_TOKEN | 
-					                     VKTOR_T_ARRAY_END;
+					                   VKTOR_T_ARRAY_END;
 					
 					done = 1;
 					break;
@@ -1324,7 +1324,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					break;
 				
 				case ':':
-					if (! parser->expected & VKTOR_C_COLON) {
+					if (! (parser->expected & VKTOR_C_COLON)) {
 						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
