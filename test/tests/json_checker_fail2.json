@@ -16,6 +16,6 @@ SKIP_STDOUT=1
 # No need to test standard error output
 SKIP_STDERR=1
 
-# Expected program return code - parse error
-TEST_RETVAL=2
+# Expected program return code - premature end of stream
+TEST_RETVAL=255
 
