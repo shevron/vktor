@@ -58,7 +58,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-check_PROGRAMS = vktor-json2yaml$(EXEEXT) vktor-validate$(EXEEXT)
+check_PROGRAMS = vktor-json2yaml$(EXEEXT) vktor-validate$(EXEEXT) \
+	vktor-benchmark$(EXEEXT)
 subdir = test
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -71,6 +72,10 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
+am_vktor_benchmark_OBJECTS = vktor-benchmark.$(OBJEXT)
+vktor_benchmark_OBJECTS = $(am_vktor_benchmark_OBJECTS)
+vktor_benchmark_LDADD = $(LDADD)
+vktor_benchmark_DEPENDENCIES = $(top_srcdir)/lib/libvktor.la
 am_vktor_json2yaml_OBJECTS = vktor-json2yaml.$(OBJEXT)
 vktor_json2yaml_OBJECTS = $(am_vktor_json2yaml_OBJECTS)
 vktor_json2yaml_LDADD = $(LDADD)
@@ -91,8 +96,10 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(vktor_json2yaml_SOURCES) $(vktor_validate_SOURCES)
-DIST_SOURCES = $(vktor_json2yaml_SOURCES) $(vktor_validate_SOURCES)
+SOURCES = $(vktor_benchmark_SOURCES) $(vktor_json2yaml_SOURCES) \
+	$(vktor_validate_SOURCES)
+DIST_SOURCES = $(vktor_benchmark_SOURCES) $(vktor_json2yaml_SOURCES) \
+	$(vktor_validate_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -231,6 +238,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 vktor_json2yaml_SOURCES = vktor-json2yaml.c
 vktor_validate_SOURCES = vktor-validate.c
+vktor_benchmark_SOURCES = vktor-benchmark.c
 AM_CFLAGS = $(VKTOR_CFLAGS)
 AM_CPPFLAGS = -I$(top_srcdir)/lib
 LDADD = $(top_srcdir)/lib/libvktor.la
@@ -280,6 +288,9 @@ clean-checkPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
+vktor-benchmark$(EXEEXT): $(vktor_benchmark_OBJECTS) $(vktor_benchmark_DEPENDENCIES) 
+	@rm -f vktor-benchmark$(EXEEXT)
+	$(LINK) $(vktor_benchmark_OBJECTS) $(vktor_benchmark_LDADD) $(LIBS)
 vktor-json2yaml$(EXEEXT): $(vktor_json2yaml_OBJECTS) $(vktor_json2yaml_DEPENDENCIES) 
 	@rm -f vktor-json2yaml$(EXEEXT)
 	$(LINK) $(vktor_json2yaml_OBJECTS) $(vktor_json2yaml_LDADD) $(LIBS)
@@ -293,6 +304,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vktor-benchmark.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vktor-json2yaml.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vktor-validate.Po@am__quote@
 
