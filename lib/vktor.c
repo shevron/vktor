@@ -820,7 +820,6 @@ parser_read_expectedstr(vktor_parser *parser, const char *expect, int explen,
 	vktor_error **error)
 {
 	char  c;
-	//~ int   ptr;
 	
 	assert(parser != NULL);
 	assert(expect != NULL);

@@ -32,4 +32,6 @@ SUBDIRS = lib test
 # Include the doxygen stuff
 include $(top_srcdir)/doxygen-include.am
 
-MOSTLYCLEANFILES = $(DX_CLEANFILES)
+mostlyclean-local:
+	rm -rf $(DX_CLEANFILES)
+
