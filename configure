@@ -11750,6 +11750,11 @@ cat >>confdefs.h <<_ACEOF
 #define ENABLE_DEBUG 1
 _ACEOF
 
+
+cat >>confdefs.h <<_ACEOF
+#define BYTECOUNTER 1
+_ACEOF
+
   VKTOR_CFLAGS+="-Wall -g"
 else
 

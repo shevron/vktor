@@ -13,8 +13,8 @@ ENDOFTEXT
 # Expecting no output
 SKIP_STDOUT=1
 
-# Expected error
-TEST_STDERR="Paser error [2]: Unexpected character in input: '2' (0x32)"
+# Expected error, but STDERR may vary so we don't check it
+SKIP_STDERR=1
 
 # Expected program return code
 TEST_RETVAL=2

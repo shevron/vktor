@@ -42,6 +42,7 @@ AC_ARG_ENABLE([debug],
 AM_CONDITIONAL(ENABLE_DEBUG, test "x$enable_debug" = "xyes")  
 if test "x$enable_debug" = "xyes"; then
   AC_DEFINE_UNQUOTED(ENABLE_DEBUG, [1], [Enable various debugging options])
+  AC_DEFINE_UNQUOTED(BYTECOUNTER, [1], [Count bytes read from input stream])
   VKTOR_CFLAGS+="-Wall -g"
 else 
   AC_DEFINE_UNQUOTED(NODEBUG, [1], [Disable assertions and other debugging options])

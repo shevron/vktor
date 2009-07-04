@@ -78,11 +78,44 @@
 #define eobuffer(b) (b->ptr >= b->size)
 
 /**
+ * Set some macros depending on whether byte counting is enabled or not 
+ */
+#ifdef BYTECOUNTER
+
+#define INCREMENT_BUFFER_PTR(p) \
+	p->buffer->ptr++;       \
+	p->bytecounter++;       
+
+#define BYTECOUNT_TPL " at %d bytes"
+#define BYTECOUNT_VAL , parser->bytecounter
+
+#else
+
+#define INCREMENT_BUFFER_PTR(p) p->buffer->ptr++;
+#define BYTECOUNT_TPL
+#define BYTECOUNT_VAL
+
+#endif
+
+
+/**
+ * When debugging is enabled, file and line info can be added to error macros 
+ */
+#ifdef ENABLE_DEBUG
+#define _VK_QUOTEME(x) #x
+#define VK_QUOTEME(x) _VK_QUOTEME(x)
+#define LINEINFO "[" __FILE__ ":" VK_QUOTEME(__LINE__) "] "
+#else
+#define LINEINFO 
+#endif
+
+/**
  * Convenience macro to set an 'unexpected character' error
  */
-#define set_error_unexpected_c(e, c)             \
-	set_error(e, VKTOR_ERR_UNEXPECTED_INPUT, \
-		"Unexpected character in input: '%c' (0x%02hhx)", c, c)
+#define set_error_unexpected_c(e, c)                                      \
+	set_error(e, VKTOR_ERR_UNEXPECTED_INPUT,                          \
+		LINEINFO "Unexpected character in input: '%c' (0x%02hhx)" \
+		BYTECOUNT_TPL, c, c BYTECOUNT_VAL)
 
 /**
  * A bitmask representing any 'value' token 
@@ -126,15 +159,15 @@
  * Convenience macro to check, and reallocate if needed, the memory size for
  * reading a token
  */
-#define check_reallocate_token_memory(cs)                              \
-	if ((ptr + 5) >= maxlen) {                                         \
-		maxlen = maxlen + cs;                                          \
-		if ((token = realloc(token, maxlen * sizeof(char))) == NULL) { \
-			set_error(error, VKTOR_ERR_OUT_OF_MEMORY,                  \
-				"unable to allocate %d more bytes for string parsing", \
-				cs);                                                   \
-			return VKTOR_ERROR;                                        \
-		}                                                              \
+#define check_reallocate_token_memory(cs)                                              \
+	if ((ptr + 5) >= maxlen) {                                                     \
+		maxlen = maxlen + cs;                                                  \
+		if ((token = realloc(token, maxlen * sizeof(char))) == NULL) {         \
+			set_error(error, VKTOR_ERR_OUT_OF_MEMORY,                      \
+				"unable to allocate %d more bytes for string parsing"  \
+				LINEINFO, cs);                                         \
+			return VKTOR_ERROR;                                            \
+		}                                                                      \
 	}
 
 /**
@@ -172,6 +205,10 @@ struct _vktor_parser_struct {
 	int             nest_ptr;     /**< pointer to the current nesting level */
 	int             max_nest;     /**< maximal nesting level */
 	unsigned long   unicode_c;    /**< temp container for unicode characters */
+#ifdef BYTECOUNTER
+	/** Total bytes parsed counter, only enabled if BYTECOUNTER is defined **/
+	unsigned long   bytecounter;  
+#endif
 };
 
 /**
@@ -670,8 +707,8 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 						break;
 				}
 			}
-						
-			parser->buffer->ptr++;
+			
+			INCREMENT_BUFFER_PTR(parser);
 			if (done) break;
 		}
 		
@@ -814,8 +851,8 @@ parser_read_expectedstr(vktor_parser *parser, const char *expect, int explen,
 			set_error_unexpected_c(error, c);
 			return VKTOR_ERROR;
 		}
-		
-		parser->buffer->ptr++;
+	
+		INCREMENT_BUFFER_PTR(parser);
 	}
 	
 	// if we made it here, it means we are good!
@@ -1061,7 +1098,7 @@ parser_read_number_token(vktor_parser *parser, vktor_error **error)
 			}
 			
 			if (done) break;
-			parser->buffer->ptr++;
+			INCREMENT_BUFFER_PTR(parser);
 			check_reallocate_token_memory(VKTOR_NUM_MEMCHUNK);
 		}
 		
@@ -1125,7 +1162,11 @@ vktor_parser_init(int max_nest)
 	parser->nest_stack   = calloc(sizeof(vktor_struct), max_nest);
 	parser->nest_ptr     = 0;
 	parser->max_nest     = max_nest;
-			
+	
+#ifdef BYTECOUNTER
+	parser->bytecounter = 0;
+#endif
+
 	return parser;
 }
 
@@ -1289,8 +1330,8 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 						set_error_unexpected_c(error, c);
 						return VKTOR_ERROR;
 					}
-					
-					parser->buffer->ptr++;	 
+				
+					INCREMENT_BUFFER_PTR(parser);
 					
 					if (parser->expected & VKTOR_T_OBJECT_KEY) {
 						return parser_read_objkey_token(parser, error);
@@ -1460,7 +1501,7 @@ vktor_parse(vktor_parser *parser, vktor_error **error)
 					break;
 			}
 			
-			parser->buffer->ptr++;
+			INCREMENT_BUFFER_PTR(parser);
 			if (done) break;
 		}
 		
