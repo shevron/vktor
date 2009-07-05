@@ -25,27 +25,22 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 ##
 
-# vktor test programs automake Makefile template
+# vktor benchmark programs automake Makefile template
 
 AM_CFLAGS = $(VKTOR_CFLAGS)
 AM_CPPFLAGS = -I$(top_srcdir)/lib
 
 LDADD = $(top_srcdir)/lib/libvktor.la
 
-check_PROGRAMS = vktor-json2yaml \
-                 vktor-validate  
+noinst_PROGRAMS = vktor-benchmark
 
-vktor_json2yaml_SOURCES = vktor-json2yaml.c
-vktor_validate_SOURCES = vktor-validate.c
+vktor_benchmark_SOURCES = vktor-benchmark.c
 
-OUTDIR=results
-TESTS_ENVIRONMENT = OUTDIR=$(OUTDIR) ./vktor-runtest.sh 
-TESTS = tests/*
+TESTS = benchmarks/*
 
-EXTRA_DIST = vktor-runtest.sh \
-             run-benchmarks.sh \
+EXTRA_DIST = run-benchmarks.sh \
              $(TESTS) 
 
-clean-local:
-	rm -rf $(OUTDIR)
-
+benchmark: vktor-benchmark.c
+	./vktor-benchmark $(TESTS)
+	

@@ -27,11 +27,14 @@
  
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = lib test
+SUBDIRS = lib test benchmark
 
 # Include the doxygen stuff
 include $(top_srcdir)/doxygen-include.am
 
 mostlyclean-local:
 	rm -rf $(DX_CLEANFILES)
+
+bench:
+	cd benchmark && $(MAKE) $(AM_MAKEFLAGS) benchmark
 

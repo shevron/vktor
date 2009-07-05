@@ -65,7 +65,8 @@ DX_INIT_DOXYGEN($PACKAGE_NAME, [doxygen.cfg], [docs])
 
 AC_CONFIG_FILES([Makefile 
                  lib/Makefile
-				 test/Makefile])
+                 test/Makefile
+		 benchmark/Makefile])
 
 AC_CONFIG_COMMANDS([default],[[ echo timestamp > stamp-h ]],[[]])
 

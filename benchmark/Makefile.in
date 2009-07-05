@@ -39,7 +39,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-# vktor test programs automake Makefile template
+# vktor benchmark programs automake Makefile template
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
@@ -58,8 +59,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-check_PROGRAMS = vktor-json2yaml$(EXEEXT) vktor-validate$(EXEEXT)
-subdir = test
+noinst_PROGRAMS = vktor-benchmark$(EXEEXT)
+subdir = benchmark
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/doxygen.m4 \
@@ -71,14 +72,11 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
-am_vktor_json2yaml_OBJECTS = vktor-json2yaml.$(OBJEXT)
-vktor_json2yaml_OBJECTS = $(am_vktor_json2yaml_OBJECTS)
-vktor_json2yaml_LDADD = $(LDADD)
-vktor_json2yaml_DEPENDENCIES = $(top_srcdir)/lib/libvktor.la
-am_vktor_validate_OBJECTS = vktor-validate.$(OBJEXT)
-vktor_validate_OBJECTS = $(am_vktor_validate_OBJECTS)
-vktor_validate_LDADD = $(LDADD)
-vktor_validate_DEPENDENCIES = $(top_srcdir)/lib/libvktor.la
+PROGRAMS = $(noinst_PROGRAMS)
+am_vktor_benchmark_OBJECTS = vktor-benchmark.$(OBJEXT)
+vktor_benchmark_OBJECTS = $(am_vktor_benchmark_OBJECTS)
+vktor_benchmark_LDADD = $(LDADD)
+vktor_benchmark_DEPENDENCIES = $(top_srcdir)/lib/libvktor.la
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__depfiles_maybe = depfiles
@@ -91,8 +89,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(vktor_json2yaml_SOURCES) $(vktor_validate_SOURCES)
-DIST_SOURCES = $(vktor_json2yaml_SOURCES) $(vktor_validate_SOURCES)
+SOURCES = $(vktor_benchmark_SOURCES)
+DIST_SOURCES = $(vktor_benchmark_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -232,13 +230,9 @@ top_srcdir = @top_srcdir@
 AM_CFLAGS = $(VKTOR_CFLAGS)
 AM_CPPFLAGS = -I$(top_srcdir)/lib
 LDADD = $(top_srcdir)/lib/libvktor.la
-vktor_json2yaml_SOURCES = vktor-json2yaml.c
-vktor_validate_SOURCES = vktor-validate.c
-OUTDIR = results
-TESTS_ENVIRONMENT = OUTDIR=$(OUTDIR) ./vktor-runtest.sh 
-TESTS = tests/*
-EXTRA_DIST = vktor-runtest.sh \
-             run-benchmarks.sh \
+vktor_benchmark_SOURCES = vktor-benchmark.c
+TESTS = benchmarks/*
+EXTRA_DIST = run-benchmarks.sh \
              $(TESTS) 
 
 all: all-am
@@ -254,9 +248,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  test/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  benchmark/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  test/Makefile
+	  $(AUTOMAKE) --foreign  benchmark/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -275,18 +269,15 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 
-clean-checkPROGRAMS:
-	@list='$(check_PROGRAMS)'; for p in $$list; do \
+clean-noinstPROGRAMS:
+	@list='$(noinst_PROGRAMS)'; for p in $$list; do \
 	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
-vktor-json2yaml$(EXEEXT): $(vktor_json2yaml_OBJECTS) $(vktor_json2yaml_DEPENDENCIES) 
-	@rm -f vktor-json2yaml$(EXEEXT)
-	$(LINK) $(vktor_json2yaml_OBJECTS) $(vktor_json2yaml_LDADD) $(LIBS)
-vktor-validate$(EXEEXT): $(vktor_validate_OBJECTS) $(vktor_validate_DEPENDENCIES) 
-	@rm -f vktor-validate$(EXEEXT)
-	$(LINK) $(vktor_validate_OBJECTS) $(vktor_validate_LDADD) $(LIBS)
+vktor-benchmark$(EXEEXT): $(vktor_benchmark_OBJECTS) $(vktor_benchmark_DEPENDENCIES) 
+	@rm -f vktor-benchmark$(EXEEXT)
+	$(LINK) $(vktor_benchmark_OBJECTS) $(vktor_benchmark_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -294,8 +285,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vktor-json2yaml.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vktor-validate.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vktor-benchmark.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -484,10 +474,9 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS)
 	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
 check: check-am
-all-am: Makefile
+all-am: Makefile $(PROGRAMS)
 installdirs:
 install: install-am
 install-exec: install-exec-am
@@ -515,7 +504,7 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-checkPROGRAMS clean-generic clean-libtool clean-local \
+clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
 	mostlyclean-am
 
 distclean: distclean-am
@@ -575,8 +564,8 @@ uninstall-am:
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-TESTS check-am clean \
-	clean-checkPROGRAMS clean-generic clean-libtool clean-local \
-	ctags distclean distclean-compile distclean-generic \
+	clean-generic clean-libtool clean-noinstPROGRAMS ctags \
+	distclean distclean-compile distclean-generic \
 	distclean-libtool distclean-tags distdir dvi dvi-am html \
 	html-am info info-am install install-am install-data \
 	install-data-am install-dvi install-dvi-am install-exec \
@@ -589,8 +578,8 @@ uninstall-am:
 	tags uninstall uninstall-am
 
 
-clean-local:
-	rm -rf $(OUTDIR)
+benchmark: vktor-benchmark.c
+	./vktor-benchmark $(TESTS)
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
