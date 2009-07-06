@@ -162,7 +162,7 @@
 #define check_reallocate_token_memory(cs)                                              \
 	if ((ptr + 5) >= maxlen) {                                                     \
 		maxlen = maxlen + cs;                                                  \
-		if ((token = realloc(token, maxlen * sizeof(char))) == NULL) {         \
+		if ((token = vrealloc(token, maxlen * sizeof(char))) == NULL) {         \
 			set_error(error, VKTOR_ERR_OUT_OF_MEMORY,                      \
 				"unable to allocate %d more bytes for string parsing"  \
 				LINEINFO, cs);                                         \
@@ -231,6 +231,10 @@ typedef enum {
 	VKTOR_C_UNIC_LS = 1 << 26, /**< Unicode low surrogate */
 } vktor_specialchar;
 
+static vktor_malloc  vmalloc  = malloc;
+static vktor_free    vfree    = free;
+static vktor_realloc vrealloc = realloc;
+
 /**
  * @brief Free a vktor_buffer struct
  * 
@@ -245,8 +249,8 @@ buffer_free(vktor_buffer *buffer)
 	assert(buffer != NULL);
 	assert(buffer->text != NULL);
 	
-	free(buffer->text);
-	free(buffer);
+	vfree(buffer->text);
+	vfree(buffer);
 }
 
 /**
@@ -295,12 +299,12 @@ set_error(vktor_error **eptr, vktor_errcode code, const char *msg, ...)
 		return;
 	}
 	
-	if ((err = malloc(sizeof(vktor_error))) == NULL) {
+	if ((err = vmalloc(sizeof(vktor_error))) == NULL) {
 		return;
 	}
 	
 	err->code = code;
-	err->message = malloc(VKTOR_MAX_E_LEN * sizeof(char));
+	err->message = vmalloc(VKTOR_MAX_E_LEN * sizeof(char));
 	if (err->message != NULL) {
 		va_list ap;
 		      
@@ -328,7 +332,7 @@ buffer_init(char *text, long text_len, char free)
 {
 	vktor_buffer *buffer;
 	
-	if ((buffer = malloc(sizeof(vktor_buffer))) == NULL) {
+	if ((buffer = vmalloc(sizeof(vktor_buffer))) == NULL) {
 		return NULL;
 	}
 	
@@ -388,7 +392,7 @@ parser_set_token(vktor_parser *parser, vktor_token token, void *value)
 {
 	parser->token_type = token;
 	if (parser->token_value != NULL) {
-		free(parser->token_value);
+		vfree(parser->token_value);
 	}
 	parser->token_value = value;
 }
@@ -488,11 +492,11 @@ parser_read_string(vktor_parser *parser, vktor_error **error)
 			assert(token != NULL);
 		} else {
 			maxlen = ptr + VKTOR_STR_MEMCHUNK;
-			token = realloc(parser->token_value, sizeof(char) * maxlen);
+			token = vrealloc(parser->token_value, sizeof(char) * maxlen);
 		}	
 		
 	} else {
-		token  = malloc(VKTOR_STR_MEMCHUNK * sizeof(char));
+		token  = vmalloc(VKTOR_STR_MEMCHUNK * sizeof(char));
 		maxlen = VKTOR_STR_MEMCHUNK;
 		ptr    = 0;
 	}
@@ -970,20 +974,20 @@ parser_read_number_token(vktor_parser *parser, vktor_error **error)
 			assert(token != NULL);
 		} else {
 			maxlen = ptr + VKTOR_NUM_MEMCHUNK;
-			token = realloc(parser->token_value, sizeof(char) * maxlen);
+			token = vrealloc(parser->token_value, sizeof(char) * maxlen);
 		}
 		
 	} else {
-		token  = malloc(VKTOR_NUM_MEMCHUNK * sizeof(char));
+		token  = vmalloc(VKTOR_NUM_MEMCHUNK * sizeof(char));
 		maxlen = VKTOR_NUM_MEMCHUNK;
 		ptr    = 0;
 		
 		// Reading a new token - set possible expected characters
 		parser->expected = VKTOR_T_INT    | 
 		                   VKTOR_T_FLOAT  | 
-						   VKTOR_C_DOT    | 
-						   VKTOR_C_EXP    | 
-						   VKTOR_C_SIGNUM;
+				   VKTOR_C_DOT    | 
+				   VKTOR_C_EXP    | 
+				   VKTOR_C_SIGNUM;
 						   
 		// Free previous token and set token type to INT until proven otherwise 
 		parser_set_token(parser, VKTOR_T_INT, NULL);
@@ -1130,6 +1134,30 @@ parser_read_number_token(vktor_parser *parser, vktor_error **error)
  */
 
 /**
+ * @brief Set memory handling function implementation
+ *
+ * Allows one to set alternative implementations of malloc, realloc and free. If 
+ * set, the alternative implementations will be used by vktor globally to manage
+ * memory. Since this has global effect it is recommended to set this once before
+ * doing anything with vktor, and not to change this.
+ *
+ * You can pass NULL as any of the functions, in which case the standard malloc, 
+ * realloc or free will be used.
+ *
+ * @param [in] vmalloc  malloc implementation
+ * @param [in] vrealloc realloc implementation
+ * @param [in] free     free implementation
+ */
+void 
+vktor_set_memory_handlers(vktor_malloc vmallocf, vktor_realloc vreallocf, 
+                          vktor_free vfreef)
+{
+	vmalloc  = (vmallocf  == NULL ? malloc  : vmallocf);
+	vrealloc = (vreallocf == NULL ? realloc : vreallocf);
+	vfree    = (vfreef    == NULL ? free    : vfreef);
+}
+
+/**
  * @brief Initialize a new parser 
  * 
  * Initialize and return a new parser struct. Will return NULL if memory can't 
@@ -1144,7 +1172,7 @@ vktor_parser_init(int max_nest)
 {
 	vktor_parser *parser;
 	
-	if ((parser = malloc(sizeof(vktor_parser))) == NULL) {
+	if ((parser = vmalloc(sizeof(vktor_parser))) == NULL) {
 		return NULL;
 	}
 		
@@ -1158,7 +1186,7 @@ vktor_parser_init(int max_nest)
 	parser->expected   = VKTOR_VALUE_TOKEN;
 
 	// set up nesting stack
-	parser->nest_stack   = calloc(sizeof(vktor_struct), max_nest);
+	parser->nest_stack   = vmalloc(sizeof(vktor_struct) * max_nest);
 	parser->nest_ptr     = 0;
 	parser->max_nest     = max_nest;
 	
@@ -1712,7 +1740,7 @@ vktor_get_value_str_copy(vktor_parser *parser, char **val, vktor_error **error)
 		return 0;
 	}
 	
-	str = malloc(sizeof(char) * (parser->token_size + 1));
+	str = vmalloc(sizeof(char) * (parser->token_size + 1));
 	str = memcpy(str, parser->token_value, parser->token_size);
 	str[parser->token_size] = '\0';
 	
@@ -1738,12 +1766,12 @@ vktor_parser_free(vktor_parser *parser)
 	}
 	
 	if (parser->token_value != NULL) {
-		free(parser->token_value);
+		vfree(parser->token_value);
 	}
 	
-	free(parser->nest_stack);
+	vfree(parser->nest_stack);
 	
-	free(parser);
+	vfree(parser);
 }
 
 /**
@@ -1757,10 +1785,10 @@ void
 vktor_error_free(vktor_error *err)
 {
 	if (err->message != NULL) {
-		free(err->message);
+		vfree(err->message);
 	}
 	
-	free(err);
+	vfree(err);
 }
 
 /** @} */ // end of external API

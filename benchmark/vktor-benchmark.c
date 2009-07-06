@@ -50,11 +50,23 @@
 #include <assert.h>
 #include <time.h>
 #include <sys/errno.h>
+#include <malloc/malloc.h>
 
 #include <vktor.h>
 
 #define DEFAULT_BUFFSIZE 4096
 #define DEFAULT_MAXDEPTH 32
+
+static size_t total_mem     = 0;
+static size_t peak_mem      = 0;
+static int    allocated     = 0;
+static int    total_mallocs = 0;
+
+void *my_malloc(size_t size);
+
+void *my_realloc(void *pointer, size_t size);
+
+void  my_free(void *pointer);
 
 int 
 main(int argc, char *argv[], char *envp[]) 
@@ -69,21 +81,14 @@ main(int argc, char *argv[], char *envp[])
 	int             buffsize = DEFAULT_BUFFSIZE;
 	int             maxdepth = DEFAULT_MAXDEPTH;
 	FILE           *infile;
-
-	/*
-	struct timeval  start_t;
-	struct timeval  end_t; 
-	time_t          bench_sec;
-	suseconds_t     bench_usec;
-	*/
-
 	clock_t         runtime; 
+	char            memtest = 0;
 
 	/* Counters */
 	int c_nulls = 0, c_falses = 0, c_trues = 0, 
 	    c_ints = 0, c_floats = 0, c_strings = 0,
 	    c_arrays = 0, c_objects = 0, c_obj_keys = 0;
-	
+
 	/* Set buffer size from environment, if set */
 	if ((envvar = getenv("BUFFSIZE")) != NULL) {
 		buffsize = atoi(envvar);
@@ -104,6 +109,12 @@ main(int argc, char *argv[], char *envp[])
 	if (infile == NULL) {
 		perror("Error opening input file");
 		exit(255);
+	}
+
+	/* Set memory handlers */
+	if (getenv("MEMTEST") != NULL) {
+		vktor_set_memory_handlers(my_malloc, my_realloc, my_free);
+		memtest = 1;
 	}
 
 	runtime = clock();
@@ -218,5 +229,49 @@ main(int argc, char *argv[], char *envp[])
 	       c_nulls, c_falses, c_trues, c_ints, c_floats, c_arrays, c_objects, c_obj_keys,
 	       (double) runtime / CLOCKS_PER_SEC);
 
+	if (memtest) {
+		printf("Memory usage test results\n\n"
+		       
+		       "Peak dynamic memory usage: %ld\n"
+		       "Total number of dynamic allocations: %d\n"
+		       "Unfreed blocks: %d\n"
+		       "Unfreed memory: %ld\n"
+		       "------------------------------------------------------------------------\n",
+		       peak_mem, total_mallocs, allocated, total_mem
+		);
+	}
+
 	return ret;
 }
+
+void *my_malloc(size_t size)
+{
+	void *ptr = malloc(size);
+
+	total_mem += malloc_size(ptr);
+	allocated++;
+	total_mallocs++;
+	if (total_mem > peak_mem) peak_mem = total_mem;
+
+	return ptr;
+}
+
+void *my_realloc(void *pointer, size_t size)
+{
+	total_mem -= malloc_size(pointer);
+	pointer = realloc(pointer, size);
+	total_mem += malloc_size(pointer);
+	total_mallocs++;
+	if (total_mem > peak_mem) peak_mem = total_mem;
+
+	return pointer;
+}
+
+void  my_free(void *pointer)
+{
+	total_mem -= malloc_size(pointer);
+	allocated--;
+
+	free(pointer);
+}
+
