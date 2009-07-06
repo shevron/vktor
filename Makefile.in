@@ -790,8 +790,11 @@ uninstall-am:
 mostlyclean-local:
 	rm -rf $(DX_CLEANFILES)
 
-bench:
+bench: all 
 	cd benchmark && $(MAKE) $(AM_MAKEFLAGS) benchmark
+
+test: all
+	cd test && $(MAKE) $(AM_MAKEFLAGS) check
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

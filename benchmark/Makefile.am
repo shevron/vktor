@@ -41,6 +41,6 @@ TESTS = benchmarks/*
 EXTRA_DIST = run-benchmarks.sh \
              $(TESTS) 
 
-benchmark: vktor-benchmark.c
+benchmark: vktor-benchmark
 	./vktor-benchmark $(TESTS)
 	

@@ -35,6 +35,9 @@ include $(top_srcdir)/doxygen-include.am
 mostlyclean-local:
 	rm -rf $(DX_CLEANFILES)
 
-bench:
+bench: all 
 	cd benchmark && $(MAKE) $(AM_MAKEFLAGS) benchmark
+
+test: all
+	cd test && $(MAKE) $(AM_MAKEFLAGS) check
 
