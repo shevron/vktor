@@ -50,7 +50,6 @@
 #include <assert.h>
 #include <time.h>
 #include <sys/errno.h>
-#include <malloc/malloc.h>
 
 #include <vktor.h>
 
