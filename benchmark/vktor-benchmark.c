@@ -170,7 +170,7 @@ main(int argc, char *argv[], char *envp[])
 				
 			case VKTOR_MORE_DATA:
 				// We need to read more data
-				buffer = malloc(sizeof(char) * buffsize);
+				buffer = my_malloc(sizeof(char) * buffsize);
 				read_bytes = fread(buffer, sizeof(char), buffsize, infile);
 				if (read_bytes) {
 					vktor_feed(parser, buffer, read_bytes, 1, &error);
