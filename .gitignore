@@ -13,3 +13,4 @@ libtool
 *.o
 *.lo
 *.la
+.*.swp
