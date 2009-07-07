@@ -57,10 +57,9 @@
 #define DEFAULT_BUFFSIZE 4096
 #define DEFAULT_MAXDEPTH 32
 
-static size_t total_mem     = 0;
-static size_t peak_mem      = 0;
-static int    allocated     = 0;
-static int    total_mallocs = 0;
+static unsigned int mallocs  = 0;
+static unsigned int reallocs = 0;
+static unsigned int frees    = 0;
 
 void *my_malloc(size_t size);
 
@@ -221,57 +220,42 @@ main(int argc, char *argv[], char *envp[])
 	       "  float:      %d\n"
 	       "  array:      %d\n"
 	       "  object:     %d\n"
-	       "  object key: %d\n\n"
+	       "  object key: %d\n\n",
 	       
-	       "Total parsing time: %f seconds\n"
-	       "------------------------------------------------------------------------\n", 
 	       (argc > 1 ? argv[1] : "data from STDIN"), 
-	       c_nulls, c_falses, c_trues, c_ints, c_floats, c_arrays, c_objects, c_obj_keys,
-	       (double) runtime / CLOCKS_PER_SEC);
+	       c_nulls, c_falses, c_trues, c_ints, c_floats, c_arrays, c_objects, c_obj_keys);
 
 	if (memtest) {
-		printf("Memory usage test results\n\n"
-		       
-		       "Peak dynamic memory usage: %ld\n"
-		       "Total number of dynamic allocations: %d\n"
-		       "Unfreed blocks: %d\n"
-		       "Unfreed memory: %ld\n"
-		       "------------------------------------------------------------------------\n",
-		       peak_mem, total_mallocs, allocated, total_mem
-		);
+		printf("malloc()  calls: %u\n"
+		       "realloc() calls: %u\n"
+		       "free()    calls: %u\n\n", mallocs, reallocs, frees); 
 	}
+	 
+	printf("Total parsing time: %f seconds\n"
+	       "------------------------------------------------------------------------\n", 
+	       (double) runtime / CLOCKS_PER_SEC);
 
 	return ret;
 }
 
+/* Wrapping malloc(), adding a counter of calls */
 void *my_malloc(size_t size)
 {
-	void *ptr = malloc(size);
-
-	total_mem += malloc_size(ptr);
-	allocated++;
-	total_mallocs++;
-	if (total_mem > peak_mem) peak_mem = total_mem;
-
-	return ptr;
+	mallocs++;
+	return malloc(size);
 }
 
+/* Wrapping realloc, adding a counter of calls */
 void *my_realloc(void *pointer, size_t size)
 {
-	total_mem -= malloc_size(pointer);
-	pointer = realloc(pointer, size);
-	total_mem += malloc_size(pointer);
-	total_mallocs++;
-	if (total_mem > peak_mem) peak_mem = total_mem;
-
-	return pointer;
+	reallocs++;
+	return realloc(pointer, size);
 }
 
+/* Wrapping free, adding a counter of calls */
 void  my_free(void *pointer)
 {
-	total_mem -= malloc_size(pointer);
-	allocated--;
-
+	frees++;
 	free(pointer);
 }
 
