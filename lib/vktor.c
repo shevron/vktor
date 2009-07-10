@@ -1181,6 +1181,7 @@ vktor_parser_init(int max_nest)
 	parser->token_type   = VKTOR_T_NONE;
 	parser->token_value  = NULL;
 	parser->token_resume = 0;
+	parser->unicode_c    = 0;
 	
 	// set expectated tokens
 	parser->expected   = VKTOR_VALUE_TOKEN;
